@@ -1,4 +1,4 @@
-import { MotionSample, TargetParams, MotionResult } from '../types';
+import { MotionSample, TargetParams, MotionResult } from '../types.js';
 
 // Ring buffer to track recent samples
 const BUFFER_SIZE = 100; // ~2 seconds at 50Hz
