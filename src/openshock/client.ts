@@ -33,12 +33,15 @@ export class OpenShockClient {
       customName: 'MotionTrainer',
     };
 
+    console.log('Sending control request:', body)
+
+    console.log(this.config.apiToken)
     try {
       const response = await fetch(`${this.apiBase}/2/shockers/control`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Open-Shock-Token': this.config.apiToken,
+          'OpenShockToken': `${this.config.apiToken}`,
           'User-Agent': 'MotionTrainer/1.0',
         },
         body: JSON.stringify(body),

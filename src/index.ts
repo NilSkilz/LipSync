@@ -91,7 +91,7 @@ async function handleMessage(
       break;
 
     case 'testVibrate':
-      await openshock.vibrate(session.shockerId, msg.data?.intensity ?? 30, 500);
+      await openshock.vibrate(session.shockerId, msg.data?.intensity ?? 30, 100);
       break;
 
     // Sensor data
