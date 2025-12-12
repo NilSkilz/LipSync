@@ -1,4 +1,21 @@
-node_modules
-dist
-/firmware/.pio
+# Dependencies
+node_modules/
+
+# Build outputs
+client/dist/
+
+# PlatformIO
+firmware/.pio/
+firmware/data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
 .DS_Store
+
+# Claude Code
+.claude/
+screenshots/

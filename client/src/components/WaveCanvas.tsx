@@ -47,7 +47,7 @@ export function WaveCanvas() {
     return () => window.removeEventListener('resize', resizeCanvas);
   }, [resizeCanvas]);
 
-  // Draw wave using quadratic curves for smoothness
+  // Draw wave with fixed transition curves and variable plateaus
   const drawWave = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -79,45 +79,66 @@ export function WaveCanvas() {
     const historyLen = waveHistory.length;
     if (historyLen < 2) return;
 
-    // Convert phase values to continuous values (unwrap phase jumps)
-    const unwrappedPhases: number[] = [waveHistory[0]];
-    let offset = 0;
-    for (let i = 1; i < historyLen; i++) {
-      const prev = waveHistory[i - 1];
-      const curr = waveHistory[i];
-      const diff = curr - prev;
+    // Fixed transition duration (in phase units, e.g., 0.15 = 15% of cycle for each transition)
+    const transitionDuration = 0.15;
 
-      // Detect phase wrap (jump greater than 0.5 means it wrapped)
-      if (diff < -0.5) {
-        offset += 1; // Wrapped from ~1 to ~0, add 1
-      } else if (diff > 0.5) {
-        offset -= 1; // Wrapped from ~0 to ~1 (reverse), subtract 1
+    // Convert phase to Y position with plateau wave shape
+    // Phase 0-0.15: transition up (out to in)
+    // Phase 0.15-0.5: plateau at top (in)
+    // Phase 0.5-0.65: transition down (in to out)
+    // Phase 0.65-1.0: plateau at bottom (out)
+    const getY = (p: number) => {
+      const normalizedPhase = ((p % 1) + 1) % 1; // Ensure 0-1 range
+
+      let value: number;
+      if (normalizedPhase < transitionDuration) {
+        // Transition up: smooth curve from -1 to 1
+        const t = normalizedPhase / transitionDuration;
+        value = -1 + 2 * (0.5 - 0.5 * Math.cos(t * Math.PI));
+      } else if (normalizedPhase < 0.5) {
+        // Plateau at top
+        value = 1;
+      } else if (normalizedPhase < 0.5 + transitionDuration) {
+        // Transition down: smooth curve from 1 to -1
+        const t = (normalizedPhase - 0.5) / transitionDuration;
+        value = 1 - 2 * (0.5 - 0.5 * Math.cos(t * Math.PI));
+      } else {
+        // Plateau at bottom
+        value = -1;
       }
-      unwrappedPhases.push(curr + offset);
-    }
 
-    // Draw smooth curve through points
+      return centerY - value * amplitude;
+    };
+
+    // Draw current position indicator
+    const indicatorX = width - 40;
+    const currentY = getY(phase);
+
+    // Draw the wave from history, ending at the dot position
     ctx.beginPath();
-
-    const getY = (phaseVal: number) => centerY - Math.sin(phaseVal * Math.PI * 2) * amplitude;
-
-    ctx.moveTo(0, getY(unwrappedPhases[0]));
+    ctx.moveTo(0, getY(waveHistory[0]));
 
     for (let i = 1; i < historyLen; i++) {
-      const x = (i / historyLen) * width;
-      const y = getY(unwrappedPhases[i]);
+      const x = (i / historyLen) * indicatorX;
+      const y = getY(waveHistory[i]);
       ctx.lineTo(x, y);
     }
     ctx.stroke();
 
-    // Draw current position indicator
-    const currentY = getY(phase);
-    const indicatorX = width - 15;
-
     ctx.beginPath();
     ctx.fillStyle = waveColor;
-    ctx.arc(indicatorX, currentY, 8, 0, Math.PI * 2);
+    ctx.arc(indicatorX, currentY, 6, 0, Math.PI * 2);
     ctx.fill();
+
+    // Draw label fixed at top right
+    const state = animationRef.current.lastState;
+    if (state && active) {
+      ctx.font = '16px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillStyle = waveColor;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(state, width - 16, 16);
+    }
   }, [active]);
 
   // Update loop
@@ -163,14 +184,15 @@ export function WaveCanvas() {
         anim.waveHistory.shift();
       }
 
-      // Check for state change (for beeps)
-      const sineValue = Math.sin(anim.phase * Math.PI * 2);
-      let newState: 'in' | 'out' | null = null;
+      // Check for state change (for beeps) based on plateau wave
+      const transitionDuration = 0.15;
+      const normalizedPhase = ((anim.phase % 1) + 1) % 1;
 
-      if (sineValue > 0.95) {
-        newState = 'in';
-      } else if (sineValue < -0.95) {
-        newState = 'out';
+      let newState: 'in' | 'out' | null = null;
+      if (normalizedPhase >= transitionDuration && normalizedPhase < 0.5) {
+        newState = 'in'; // At top plateau
+      } else if (normalizedPhase >= 0.5 + transitionDuration) {
+        newState = 'out'; // At bottom plateau
       }
 
       if (newState && newState !== anim.lastState && active) {
@@ -202,9 +224,6 @@ export function WaveCanvas() {
   return (
     <div className="wave-container" onClick={initAudio}>
       <canvas ref={canvasRef} />
-      <div className="position-label">
-        {animationRef.current.lastState || '--'}
-      </div>
     </div>
   );
 }

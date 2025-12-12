@@ -107,10 +107,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const actions = {
     start: useCallback(() => {
+      dispatch({ type: 'SET_ACTIVE', payload: true });
       send('start');
     }, [send]),
 
     stop: useCallback(() => {
+      dispatch({ type: 'SET_ACTIVE', payload: false });
       send('stop');
     }, [send]),
 

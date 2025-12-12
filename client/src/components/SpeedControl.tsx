@@ -105,7 +105,14 @@ export function SpeedControl() {
         onMouseDown={onMouseDown}
       >
         <div className="speed-track-fill" style={{ height: `${localPercent}%` }} />
-        <div className="speed-button" style={{ top: buttonTop }}>
+        <div
+          className="speed-button"
+          style={{ top: buttonTop }}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onMouseDown={onMouseDown}
+        >
           <div className="speed-button-inner">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />

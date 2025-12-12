@@ -1,185 +1,157 @@
-# Motion Trainer Server
+# Motion Trainer
 
-A TypeScript backend for a wearable motion-tracking training system with haptic feedback.
+A self-contained motion-tracking training system with haptic feedback. The ESP32 serves both the web app and handles all motion tracking and feedback - no external server needed.
 
 ## Overview
 
-This project enables motion-based training with real-time feedback. A custom ESP32 device with IMU sensor tracks motion and controls a vibration collar directly. The server evaluates motion against configurable targets and sends feedback commands back to the device.
-
 ```
-┌──────────────────┐
-│    Phone SPA     │  React + Vite
-│  (set targets)   │  Connects via WebSocket
-└────────┬─────────┘
-         │ WS (/phone)
-         ▼
-┌──────────────────┐         ┌──────────────────┐
-│   Node Server    │◄──WS───►│  ESP32 Device    │
-│   (this repo)    │ (/sensor)│  (Custom Firmware)│
-│                  │         │                  │
-│  - Session state │         │  - IMU sensor    │
-│  - Motion eval   │         │  - Collar control│
-│  - Feedback logic│         └──────────────────┘
-└──────────────────┘
+┌──────────────────┐         ┌──────────────────────────────────┐
+│   Phone/Tablet   │         │         ESP32 Device             │
+│    (Browser)     │◄──────►│                                  │
+│                  │  WiFi   │  - Web server (serves React app) │
+│  Opens:          │         │  - WebSocket server (/ws)        │
+│  http://device   │         │  - IMU sensor (motion tracking)  │
+│                  │         │  - RF transmitter (collar ctrl)  │
+└──────────────────┘         └──────────────────────────────────┘
 ```
-
-## Tech Stack
-
-- **Runtime**: Node.js with ES Modules
-- **Language**: TypeScript (strict mode)
-- **Framework**: Express 4.x
-- **WebSocket**: ws library
-- **Build**: tsc → dist/
-- **Dev**: tsx watch
-- **Hosting**: Railway
 
 ## Project Structure
 
 ```
-motion-trainer-server/
-├── src/
-│   ├── index.ts              # Express + WebSocket server setup
-│   └── types.ts              # All TypeScript interfaces
-├── package.json
-├── tsconfig.json
-├── railway.json
-└── .env                      # Local env vars (not committed)
+motion-trainer/
+├── client/                 # React SPA (Vite + TypeScript)
+│   ├── src/
+│   │   ├── components/     # UI components
+│   │   ├── context/        # React contexts
+│   │   ├── hooks/          # Custom hooks (useWebSocket, useAudio)
+│   │   ├── styles/         # CSS
+│   │   └── types.ts        # TypeScript types
+│   ├── package.json
+│   └── vite.config.ts
+├── firmware/               # ESP32 firmware (PlatformIO)
+│   ├── src/
+│   │   └── main.cpp        # Web server + WebSocket + hardware control
+│   ├── include/
+│   │   ├── config.h        # Pin definitions, defaults
+│   │   ├── rf_transmitter.h
+│   │   └── motion_tracker.h
+│   ├── data/               # Built web files (LittleFS) - gitignored
+│   └── platformio.ini
+├── enclosure/              # 3D printable enclosure
+│   └── base.stl
+└── screenshots/
 ```
 
-## Key Components
+## Hardware
 
-### `src/index.ts` - Main Server
+- **Board**: ESP32-WROOM-32 Dev Module (generic, with CH340C USB-serial)
+- **IMU**: MPU6050 (I2C: SDA=21, SCL=22) - optional
+- **RF Transmitter**: 433MHz (pin 15) - for CaiXianlin protocol collar
 
-Sets up Express with WebSocket upgrade handling. Manages two WebSocket endpoints:
-- `/phone` - Single connection from the control SPA
-- `/sensor` - Single connection from the ESP32 device
+## Building & Deploying
 
-Maintains a `session` object with current state (active, targets, feedbackIntensity).
+### Prerequisites
 
-Handles incoming messages via a switch on `msg.type`:
-- `setTargets` - Updates pace/depth/tolerance targets
-- `setIntensity` - Sets feedback intensity (0-100)
-- `start` / `stop` - Session control
-- `testVibrate` - Manual vibration test
-- `motion` - Incoming sensor data, triggers evaluation
+```bash
+# Install PlatformIO CLI
+brew install platformio
 
-Sends feedback commands back to the ESP32 device which controls the collar directly.
-
-### `src/types.ts` - Type Definitions
-
-```typescript
-interface MotionSample {
-  timestamp: number;
-  pitch: number;
-  roll: number;
-  yaw: number;
-  accelX: number;
-  accelY: number;
-  accelZ: number;
-}
-
-interface Targets {
-  paceBPM: number;        // Target strokes per minute
-  depthDegrees: number;   // Target pitch range
-  tolerance: number;      // 0-1, deviation threshold for feedback
-}
-
-interface EvaluationResult {
-  deviation: number;
-  currentPace: number;
-  currentDepth: number;
-}
-
-interface Session {
-  active: boolean;
-  targets: Targets;
-  feedbackIntensity: number;  // 0-100
-}
+# Install client dependencies
+cd client && npm install
 ```
+
+### Build & Upload
+
+```bash
+# Build React app and copy to firmware data folder
+cd client && npm run build && cp -r dist/* ../firmware/data/
+
+# Upload firmware and filesystem to ESP32
+cd ../firmware
+pio run -t upload -e esp32dev      # Upload firmware (hold BOOT button)
+pio run -t uploadfs -e esp32dev    # Upload web files to LittleFS
+```
+
+### First-Time WiFi Setup
+
+1. Power on ESP32
+2. Connect to "MotionTrainer-Setup" WiFi hotspot
+3. Configure your WiFi credentials
+4. Device will restart and connect to your network
+
+### Accessing the App
+
+Open in browser: `http://motiontrainer.local` or the IP address shown in serial monitor.
 
 ## WebSocket Protocol
 
-### Phone → Server
+All communication happens over WebSocket at `/ws`.
+
+### Client → Device
 
 ```typescript
-{ "type": "setTargets", "data": { "paceBPM": 60, "depthDegrees": 30, "tolerance": 0.3 } }
-{ "type": "setIntensity", "data": { "intensity": 50 } }
 { "type": "start" }
 { "type": "stop" }
+{ "type": "setTargets", "data": { "paceBPM": 60, "depthDegrees": 30, "tolerance": 0.3 } }
+{ "type": "setIntensity", "data": { "intensity": 50 } }
 { "type": "testVibrate", "data": { "intensity": 30 } }
+{ "type": "testBeep" }
+{ "type": "getState" }
 ```
 
-### Sensor → Server
+### Device → Client
 
 ```typescript
-{
-  "type": "motion",
-  "data": {
-    "timestamp": 1699999999999,
-    "pitch": 15.5,
-    "roll": 2.1,
-    "yaw": 0.3,
-    "accelX": 0.1,
-    "accelY": 0.05,
-    "accelZ": 9.8
-  }
-}
-```
-
-### Server → Phone
-
-```typescript
-{ "type": "state", "data": { "active": false, "targets": {...}, ... } }
-{ "type": "motionUpdate", "data": { "sample": {...}, "result": {...} } }
+{ "type": "state", "data": { "active": false, "targets": {...}, "rfAvailable": true, "imuAvailable": false } }
 { "type": "sessionStarted" }
 { "type": "sessionStopped" }
-{ "type": "targetsUpdated", "data": {...} }
+{ "type": "cycleResult", "data": { "currentBPM": 58, "deviation": 0.15, "feedback": false } }
 ```
 
-### Server → Device
+## Configuration
 
-```typescript
-{ "type": "vibrate", "data": { "intensity": 50, "duration": 300 } }
+Edit `firmware/include/config.h`:
+
+```cpp
+#define MDNS_HOSTNAME "motiontrainer"  // Access via http://motiontrainer.local
+#define WS_PORT 80                      // HTTP/WebSocket port
+#define SHOCKER_TRANSMITTER_ID 12345    // Must match your paired collar
+#define SHOCKER_CHANNEL 0               // 0, 1, or 2
 ```
 
-## Environment Variables
+## Serial Commands (for testing)
 
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Server port (default: 3000) |
+Connect at 115200 baud:
+- `v` - Test vibrate
+- `b` - Test beep
+- `s` - Show status (IP, hardware availability)
+- `h` - Help
 
-## Commands
+## Development
+
+### Client Development
 
 ```bash
-npm run dev      # Start with tsx watch (hot reload)
-npm run build    # Compile TypeScript to dist/
-npm run start    # Run compiled JS (production)
+cd client
+npm run dev   # Starts dev server on http://localhost:5173
 ```
 
-## Related Components (separate repos/projects)
+For local development, the app auto-detects if it's running on localhost vs ESP32 and adjusts WebSocket URL accordingly.
 
-### Phone SPA
-- React + Vite + Tailwind
-- Connects to `wss://<server>/phone`
-- Controls: pace slider, depth slider, tolerance, intensity, start/stop
+### Firmware Development
 
-### ESP32 Device Firmware
-- Custom firmware for ESP32 Dev Module (ESP-WROOM-32 with CH340C USB-serial)
-- Integrated IMU sensor (motion tracking)
-- Direct collar control (vibration feedback)
-- Connects to `wss://<server>/sensor`
-- Sends motion samples as JSON, receives vibrate commands
+```bash
+cd firmware
+pio run                    # Build
+pio run -t upload          # Upload firmware
+pio run -t uploadfs        # Upload filesystem
+pio device monitor -b 115200  # Serial monitor
+```
 
-## Development Notes
+## Notes
 
-- Motion evaluation uses cycle-based detection (in/out motions) rather than raw sample analysis
-- Feedback is triggered at cycle boundaries for more natural timing
-- Vibrate commands are sent directly to the ESP32 device which controls the collar
-- Railway auto-detects Node.js and runs the build/start scripts
-
-## Conventions
-
-- Use ES Module imports (`import`/`export`)
-- Prefer interfaces over types for object shapes
-- Keep WebSocket message handlers in the main switch statement
-- All async functions should have error handling
+- The ESP32 serves the React app from LittleFS flash storage (~220KB)
+- Uses ESPAsyncWebServer for HTTP and WebSocket on the same port
+- WiFiManager provides captive portal for initial WiFi setup
+- mDNS allows access via `motiontrainer.local` hostname
+- Hardware (IMU, RF) is optional - device works without them for testing
