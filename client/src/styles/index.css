@@ -1,0 +1,365 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-card: #1a1a24;
+  --text-primary: #ffffff;
+  --text-secondary: #888899;
+  --accent: #ff69b4;
+  --accent-dim: #d44a94;
+  --accent-glow: rgba(255, 105, 180, 0.4);
+  --accent-soft: rgba(255, 105, 180, 0.15);
+  --border-color: #2a2a3a;
+  --success: #44dd88;
+  --danger: #ff4466;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  touch-action: manipulation;
+}
+
+/* App Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Wave Canvas - Top Section */
+.wave-container {
+  flex: 0 0 35%;
+  min-height: 180px;
+  max-height: 280px;
+  background: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
+}
+
+.wave-container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.position-label {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: lowercase;
+}
+
+/* Main Content - Bottom Section */
+.main-content {
+  flex: 1;
+  display: flex;
+  padding: 1.5rem;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+/* Control Panel - Left Side */
+.control-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.icon-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Current Movement Display */
+.movement-display {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.movement-display .current {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Action Buttons */
+.action-btn {
+  padding: 1rem 1.5rem;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  width: 100%;
+}
+
+.action-btn.primary {
+  background: var(--accent);
+  color: white;
+}
+
+.action-btn.primary:active {
+  background: var(--accent-dim);
+  transform: scale(0.98);
+}
+
+.action-btn.primary.active {
+  background: var(--danger);
+}
+
+.action-btn.outline {
+  background: transparent;
+  border: 1.5px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.action-btn.outline:active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.action-btn.outline.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.action-btn.icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn.icon:active {
+  color: var(--accent);
+}
+
+.action-btn.icon.active {
+  color: var(--accent);
+}
+
+.action-btn.icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Timer Control */
+.timer-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.timer-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  font-weight: 300;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-btn:active {
+  color: var(--accent);
+}
+
+.timer-value {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  min-width: 80px;
+  text-align: center;
+}
+
+/* Speed Control - Right Side (Lovense Style) */
+.speed-control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding-left: 1rem;
+}
+
+.speed-track {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  min-height: 200px;
+  background: var(--bg-card);
+  border-radius: 4px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.speed-track-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, var(--accent-dim), var(--accent));
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.speed-button {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+}
+
+.speed-button-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+  box-shadow: 0 0 30px var(--accent-glow), 0 4px 15px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.speed-button-inner svg {
+  width: 28px;
+  height: 28px;
+  opacity: 0.9;
+}
+
+.speed-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.speed-title {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.speed-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Connection Status */
+.connection-status {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.connection-status.connected {
+  background: rgba(68, 221, 136, 0.1);
+  color: var(--success);
+}
+
+.connection-status.disconnected {
+  background: rgba(255, 68, 102, 0.1);
+  color: var(--danger);
+}
+
+/* Tablet and Desktop */
+@media (min-width: 768px) {
+  .wave-container {
+    flex: 0 0 40%;
+    max-height: 350px;
+  }
+
+  .main-content {
+    padding: 2rem;
+    gap: 2rem;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .control-panel {
+    gap: 1rem;
+  }
+
+  .action-btn {
+    padding: 1.25rem 2rem;
+    font-size: 1.1rem;
+  }
+
+  .speed-track {
+    width: 10px;
+    min-height: 280px;
+  }
+
+  .speed-button {
+    width: 80px;
+    height: 80px;
+  }
+
+  .speed-button-inner svg {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .wave-container {
+    flex: 0 0 30%;
+    min-height: 120px;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .speed-track {
+    min-height: 150px;
+  }
+
+  .speed-button {
+    width: 50px;
+    height: 50px;
+  }
+}

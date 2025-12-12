@@ -11,22 +11,21 @@ export interface SessionState {
   shockerId: string;
 }
 
-export interface MotionSample {
-  timestamp: number;   // ms since epoch
-  pitch: number;       // degrees, head angle forward/back
-  roll: number;        // degrees, head tilt left/right
-  yaw: number;         // degrees, head rotation
-  accelX: number;      // m/s², forward/back acceleration
-  accelY: number;      // m/s², left/right acceleration  
-  accelZ: number;      // m/s², up/down acceleration
+// Sent by ESP32 sensor on each completed stroke
+export interface CycleEvent {
+  duration: number;   // ms for this cycle (time since last reversal)
+  depth: number;      // degrees of motion in this cycle
+  timestamp: number;  // ms since epoch
 }
 
-export interface MotionResult {
-  currentPace: number;      // detected BPM
-  currentDepth: number;     // detected angle range
-  paceDeviation: number;    // 0-1, how far from target
-  depthDeviation: number;   // 0-1, how far from target
-  deviation: number;        // 0-1, combined score
+// Result of evaluating a cycle
+export interface CycleResult {
+  currentBPM: number;       // calculated from cycle duration
+  currentDepth: number;     // degrees
+  paceDeviation: number;    // 0-1
+  depthDeviation: number;   // 0-1
+  deviation: number;        // 0-1, combined
+  feedback: boolean;        // whether feedback was triggered
 }
 
 // Messages from phone
@@ -35,16 +34,21 @@ export type PhoneMessage =
   | { type: 'setIntensity'; data: { intensity: number } }
   | { type: 'start' }
   | { type: 'stop' }
-  | { type: 'testVibrate'; data?: { intensity: number } };
+  | { type: 'testVibrate'; data?: { intensity: number } }
+  | { type: 'testBeep' };
 
 // Messages from sensor
-export type SensorMessage = 
-  | { type: 'motion'; data: MotionSample };
+export type SensorMessage =
+  | { type: 'cycle'; data: CycleEvent };
 
-// Messages to clients
-export type ServerMessage =
+// Messages to phone
+export type ServerToPhoneMessage =
   | { type: 'state'; data: SessionState }
   | { type: 'targetsUpdated'; data: TargetParams }
   | { type: 'sessionStarted' }
   | { type: 'sessionStopped' }
-  | { type: 'motionUpdate'; data: { sample: MotionSample; result: MotionResult } };
+  | { type: 'cycleResult'; data: { cycle: CycleEvent; result: CycleResult } };
+
+// Messages to sensor
+export type ServerToSensorMessage =
+  | { type: 'sessionStatus'; data: { active: boolean } };

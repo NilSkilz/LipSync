@@ -127,6 +127,18 @@ railway up
 { "type": "targetsUpdated", "data": {...} }
 ```
 
+## Testing
+
+You can test the WebSocket API using [websocat](https://github.com/vi/websocat):
+
+```bash
+# Connect to phone endpoint
+websocat wss://motion-trainer-server-production.up.railway.app/phone
+
+# Then send a test vibration command:
+{"type":"testVibrate","data":{"intensity":10}}
+```
+
 ## Project Structure
 
 ```
