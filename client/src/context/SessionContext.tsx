@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, useCallback, useRef, type ReactNode } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useConnection } from './ConnectionContext';
 import type { AppState, AppAction, ServerMessage, AppMode } from '../types';
 
 const initialState: AppState = {
@@ -70,6 +71,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
   const lastSentBPMRef = useRef<number | null>(null);
+  const { deviceUrl } = useConnection();
 
   const handleMessage = useCallback((msg: ServerMessage) => {
     switch (msg.type) {
@@ -97,6 +99,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const { send } = useWebSocket({
+    url: deviceUrl,
     onMessage: handleMessage,
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,

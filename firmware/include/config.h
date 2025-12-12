@@ -24,14 +24,14 @@
 #endif
 
 // ============================================
-// SERVER CONFIGURATION
+// WEBSOCKET SERVER CONFIGURATION
 // ============================================
 
-// Default WebSocket server (override via WiFiManager)
-#define DEFAULT_SERVER_HOST "motion-trainer-server-production.up.railway.app"
-#define DEFAULT_SERVER_PORT 443
-#define DEFAULT_SERVER_PATH "/sensor"
-#define DEFAULT_USE_SSL true
+// mDNS hostname (device will be accessible at motiontrainer.local)
+#define MDNS_HOSTNAME "motiontrainer"
+
+// WebSocket server port
+#define WS_PORT 80
 
 // ============================================
 // SHOCKER CONFIGURATION
