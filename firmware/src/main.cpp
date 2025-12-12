@@ -4,6 +4,7 @@
 #include <ArduinoWebsockets.h>
 #include <ArduinoJson.h>
 #include "config.h"
+#include "certificates.h"
 #include "rf_transmitter.h"
 #include "motion_tracker.h"
 
@@ -187,10 +188,16 @@ void loop() {
 }
 
 void connectWebSocket() {
-    Serial.printf("Connecting to %s...\n", serverHost.c_str());
-    
-    String url = (useSSL ? "wss://" : "ws://") + serverHost + serverPath;
-    
+    Serial.printf("Connecting to %s:%d...\n", serverHost.c_str(), serverPort);
+
+    // Set root CA certificate for SSL verification
+    if (useSSL) {
+        ws.setCACert(ISRG_ROOT_X1);
+    }
+
+    String url = (useSSL ? "wss://" : "ws://") + serverHost + ":" + String(serverPort) + serverPath;
+    Serial.printf("URL: %s\n", url.c_str());
+
     if (ws.connect(url)) {
         Serial.println("WebSocket connected!");
         sendStatus("connected");
