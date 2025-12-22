@@ -44,12 +44,12 @@ The ESP32 creates its own WiFi network. Connect your phone, open the browser, an
 | RF Shock Collar | CaiXianlin protocol (common on Amazon/AliExpress) | 1 | $25 | The cheap ones with 3 channels | [aliexpress](https://www.aliexpress.com/item/1005005133046985.html?spm=a2g0o.order_list.order_list_main.73.7a7c1802LxhIXn) |
 | MPU6050 IMU | 6-axis accelerometer/gyro | 1 | $2 | Optional - for motion tracking | [aliexpress](https://www.aliexpress.com/item/1005009668682906.html?spm=a2g0o.order_list.order_list_main.5.31e21802mOT362) |
 | Jumper Wires | Female-to-female | ~10 | $2 | For connections |
-| USB Cable | Micro-USB or USB-C (depends on board) | 1 | $3 | Data cable, not charge-only |
+| USB Cable | Micro-USB or USB-C (depends on board) | 1 | - | Data cable, not charge-only |
 | Enclosure | 3D printed or project box | 1 | - | Optional - STL files included |
 | 18650 Enclosure | | 1 | $3 | Anything that will provide 5v via USB | [aliexpress](https://www.aliexpress.com/item/4000225705264.html?spm=a2g0o.productlist.main.3.6eb47cdcI3rKrQ&algo_pvid=3bceff15-865b-4fc9-a1e7-80fd209c7bd5&algo_exp_id=3bceff15-865b-4fc9-a1e7-80fd209c7bd5-2&pdp_ext_f=%7B%22order%22%3A%22557%22%2C%22spu_best_type%22%3A%22order%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21GBP%211.69%211.69%21%21%212.20%212.20%21%402103890117664361618361181edefc%2110000000887930324%21sea%21UK%21765854333%21X%211%210%21n_tag%3A-29919%3Bd%3Aa37805a3%3Bm03_new_user%3A-29895&curPageLogUid=bnPlmO818cNE&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A4000225705264%7C_p_origin_prod%3A) |
 | 18650 Battery | | 1 | $4 | | [aliexpress](https://www.aliexpress.com/item/1005010557364599.html?spm=a2g0o.productlist.main.3.57d1184fWd38nA&algo_pvid=5e19cdcd-bc21-48f4-8853-18cf01c0cc41&algo_exp_id=5e19cdcd-bc21-48f4-8853-18cf01c0cc41-2&pdp_ext_f=%7B%22order%22%3A%227%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21GBP%2122.02%213.17%21%21%21201.47%2129.04%21%402103919917664363228704335e4ed8%2112000052806891711%21sea%21UK%21765854333%21X%211%210%21n_tag%3A-29919%3Bd%3Aa37805a3%3Bm03_new_user%3A-29895%3BpisId%3A5000000197087145&curPageLogUid=75kd0oxtRwHv&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005010557364599%7C_p_origin_prod%3A)
 
-**Total cost: ~$35-70** (depending on what you already have)
+**Total cost: ~$45** (depending on what you already have)
 
 ### Where to Buy
 
