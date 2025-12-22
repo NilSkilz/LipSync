@@ -1,6 +1,24 @@
-# Motion Trainer
+# LipSync
 
-A self-contained motion training device with real-time haptic feedback. Everything runs on a single ESP32 - no cloud server required.
+A rhythm-guided training system with haptic feedback. Turn oral service into a game they *really* don't want to lose.
+
+Your sub follows a wave pattern on their phone while wearing an RF shock collar. Fall out of rhythm? They get a reminder. You control the pace.
+
+Everything runs on a single ESP32 - no cloud, no apps to install, completely self-contained.
+
+![LipSync Screenshot](screenshots/screenshot.png)
+
+## Features
+
+- **Visual guidance** - Smooth wave pattern shows the target rhythm
+- **Audio cues** - High/low beeps signal direction changes
+- **Adjustable pace** - Slide to control speed in real-time
+- **Escalating feedback** - Starts gentle, increases with repeated mistakes
+- **Shock collar integration** - Works with cheap 433MHz RF collars
+- **Hold modes** - Special modes for deepthroat and kiss/lick
+- **Motion tracking** - Optional IMU shows their actual movement vs target
+- **No internet required** - Works completely offline
+- **Mobile-first UI** - Designed for phones and tablets
 
 ## How It Works
 
@@ -10,159 +28,197 @@ A self-contained motion training device with real-time haptic feedback. Everythi
 │    (Browser)     │◄───────►│                                  │
 │                  │  WiFi   │  - Web server (serves React app) │
 │  Opens:          │         │  - WebSocket (real-time comms)   │
-│  motiontrainer   │         │  - RF transmitter (collar ctrl)  │
-│  .local          │         │  - MPU6050 IMU (motion tracking) │
+│  lipsync.local   │         │  - RF transmitter (collar ctrl)  │
+│                  │         │  - MPU6050 IMU (motion tracking) │
 └──────────────────┘         └──────────────────────────────────┘
 ```
 
-Your phone connects directly to the ESP32 over WiFi. The ESP32 serves the web app from its flash storage and handles all the hardware control.
+The ESP32 creates its own WiFi network. Connect your phone, open the browser, and you're ready to play.
+
+## Bill of Materials
+
+| Component | Description | Qty | Approx. Price | Notes |
+|-----------|-------------|-----|---------------|-------|
+| ESP32 Dev Board | ESP-WROOM-32 with CH340C USB | 1 | $5-10 | Any ESP32 devkit works |
+| 433MHz RF Transmitter | FS1000A or similar | 1 | $2-5 | For collar control |
+| RF Shock Collar | CaiXianlin protocol (common on Amazon/AliExpress) | 1 | $20-40 | The cheap ones with 3 channels |
+| MPU6050 IMU | 6-axis accelerometer/gyro | 1 | $2-5 | Optional - for motion tracking |
+| Jumper Wires | Female-to-female | ~10 | $2 | For connections |
+| USB Cable | Micro-USB or USB-C (depends on board) | 1 | $3 | Data cable, not charge-only |
+| Enclosure | 3D printed or project box | 1 | $5 | Optional - STL files included |
+
+**Total cost: ~$35-70** (depending on what you already have)
+
+### Where to Buy
+
+- **ESP32**: Amazon, AliExpress, or electronics suppliers like Adafruit/SparkFun
+- **RF Transmitter**: Search "433MHz transmitter module FS1000A"
+- **Shock Collar**: Search "dog training collar 433MHz" - look for ones with vibrate/beep/shock modes
+- **MPU6050**: Search "MPU6050 GY-521 module"
+
+## Wiring
+
+```
+ESP32 Pin    Component
+─────────    ─────────
+GPIO 15  →   RF Transmitter DATA
+GPIO 21  →   MPU6050 SDA (optional)
+GPIO 22  →   MPU6050 SCL (optional)
+3.3V     →   RF Transmitter VCC, MPU6050 VCC
+GND      →   RF Transmitter GND, MPU6050 GND
+```
+
+**Note**: Some RF transmitters work better with 5V. If range is poor, try connecting VCC to the 5V pin instead.
 
 ## Quick Start
 
-1. Power on the ESP32
-2. Connect to "MotionTrainer-Setup" WiFi to configure your network
-3. Open `http://motiontrainer.local` in your browser
-4. Start training!
-
-## Project Structure
-
-```
-motion-trainer/
-├── client/                 # React web app
-│   ├── src/
-│   │   ├── components/     # UI components (WaveCanvas, SpeedControl, etc.)
-│   │   ├── context/        # State management
-│   │   ├── hooks/          # useWebSocket, useAudio
-│   │   └── styles/         # CSS
-│   └── package.json
-├── firmware/               # ESP32 firmware (PlatformIO)
-│   ├── src/main.cpp        # Main firmware code
-│   ├── data/               # Built web files go here (for upload to ESP32)
-│   └── platformio.ini      # Build configuration
-└── screenshots/            # Reference images
-```
-
-## Updating the Device
-
-When you make changes to the web app or firmware, you need to upload them to the ESP32.
-
-### Prerequisites
+### 1. Flash the Firmware
 
 ```bash
-# Install PlatformIO CLI (macOS)
-brew install platformio
+# Install PlatformIO
+brew install platformio   # macOS
+# or: pip install platformio
 
-# Install client dependencies
-cd client
+# Clone and build
+git clone https://github.com/yourusername/lipsync.git
+cd lipsync/client
 npm install
-```
-
-### Update Web App Only
-
-If you only changed the React app (client code):
-
-```bash
-# 1. Build the React app
-cd client
-npm run build
-
-# 2. Copy built files to firmware data folder
-cp -r dist/* ../firmware/data/
-
-# 3. Upload to ESP32 filesystem
-cd ../firmware
-pio run -t uploadfs -e esp32dev
-```
-
-### Update Firmware Only
-
-If you only changed the ESP32 code (firmware/src):
-
-```bash
-cd firmware
-pio run -t upload -e esp32dev
-```
-
-Note: You may need to hold the BOOT button on the ESP32 when uploading starts.
-
-### Update Both
-
-```bash
-# Build and copy web app
-cd client
 npm run build
 cp -r dist/* ../firmware/data/
 
-# Upload everything
 cd ../firmware
-pio run -t upload -e esp32dev      # Firmware
-pio run -t uploadfs -e esp32dev    # Web files
+pio run -t upload -e esp32dev      # Upload firmware (hold BOOT button)
+pio run -t uploadfs -e esp32dev    # Upload web files
 ```
 
-### Monitor Serial Output
+### 2. Connect and Play
 
-To see debug output from the ESP32:
+1. Power on the ESP32
+2. Connect to the "LipSync" WiFi network (password: `lipsync123`)
+3. Open `http://lipsync.local` in your browser (or `http://192.168.4.1`)
+4. Tap "Play" to begin!
 
-```bash
-cd firmware
-pio device monitor -b 115200
-```
+### 3. Pairing the collar
+
+Collars can be put into pairing mode by pressing the power button for ~2 seconds. There will be a beep, and the light will flash continuously.
+To pair, send a "beep" signal from the app (open the settings cog and click the "Beep" button)
+
+## Usage
+
+### Main Controls
+
+- **Speed Slider** (right side) - Drag up/down to control pace
+- **Start/Pause** - Begin or pause the session
+- **Hold/Kiss** - Quick buttons for hold modes
+
+### Settings (gear icon)
+
+- **Punishment Mode**: Beep, Vibrate, or Shock
+- **Max Intensity**: Limit for shock strength
+- **Increasing Intensity**: Start low, escalate with mistakes
+
+### How Feedback Works
+
+1. **Grace period** after speed changes - time to adjust
+2. **First mistake** at a given speed - warning vibration
+3. **Repeated mistakes** - shock at current intensity
+4. **Each punishment** - intensity increases (if enabled)
+5. **Speed change** - resets warning, gives grace period
 
 ## Development
 
 ### Local Web Development
 
-You can develop the web app without the ESP32:
-
 ```bash
 cd client
-npm run dev
+npm run dev    # Starts at http://localhost:5173
 ```
-
-This starts a dev server at `http://localhost:5173`. The app detects it's running locally and disables WebSocket connections, so you can test the UI.
 
 ### Firmware Development
 
 ```bash
 cd firmware
-pio run                    # Build only
-pio run -t upload          # Build and upload
+pio run                           # Build
+pio run -t upload                 # Upload
+pio device monitor -b 115200      # Serial monitor
 ```
 
-## Hardware
+### Serial Commands
 
-### Required
-- ESP32 Dev Board (ESP-WROOM-32 with CH340C USB-serial)
+Connect at 115200 baud for debugging:
+- `v` - Test vibrate
+- `b` - Test beep
+- `s` - Show status
+- `h` - Help
 
-### Optional
-- **433MHz RF transmitter** (pin 15) - for vibration collar control
-- **MPU6050 IMU** (I2C: SDA=21, SCL=22) - for motion tracking
+## Project Structure
 
-The device works without the optional hardware - useful for testing the app.
+```
+lipsync/
+├── client/                 # React web app (Vite + TypeScript)
+│   ├── src/
+│   │   ├── components/     # UI components
+│   │   ├── context/        # State management
+│   │   ├── hooks/          # useWebSocket, useAudio
+│   │   └── styles/         # CSS
+│   └── package.json
+├── firmware/               # ESP32 firmware (PlatformIO)
+│   ├── src/main.cpp        # Main firmware
+│   ├── include/            # Headers (config, RF, IMU)
+│   ├── data/               # Built web files (LittleFS)
+│   └── platformio.ini
+├── enclosure/              # 3D printable enclosure STLs
+└── screenshots/
+```
 
 ## Troubleshooting
 
-### Can't connect to ESP32
-- Make sure your phone/computer is on the same WiFi network
-- Try the IP address instead of `motiontrainer.local`
-- Check serial monitor for the device's IP address
+### Can't connect to WiFi
+- Make sure you're connecting to "LipSync" network
+- Password is `lipsync123`
+- Try `http://192.168.4.1` if `.local` doesn't work
+
+### Collar not responding
+- Check RF transmitter wiring (DATA to GPIO 15)
+- Try 5V instead of 3.3V for the transmitter
+- Use serial monitor to confirm signals are being sent
 
 ### Upload fails
-- Hold the BOOT button on the ESP32 when upload starts
-- Try a different USB cable (some are charge-only)
-- Make sure no serial monitor is connected
+- Hold the BOOT button when upload starts
+- Try a different USB cable (must be data, not charge-only)
+- Close any serial monitors first
 
 ### Web app not loading
-- Verify filesystem was uploaded: `pio run -t uploadfs`
-- Check serial monitor for errors
+- Make sure filesystem was uploaded: `pio run -t uploadfs`
+- Check serial output for errors
 
-## Technical Details
+## Safety
 
-See [CLAUDE.md](CLAUDE.md) for:
-- WebSocket protocol documentation
-- Configuration options
-- Serial commands for testing
+This project involves shock collars. Please:
+- **Always have a safeword** and a way to immediately stop
+- **Test intensity on yourself first** before using on a partner
+- **Start at low intensity** and increase gradually
+- **Never use on anyone with a heart condition** or pacemaker
+- **Remove if any unusual reaction occurs**
+- This is for **consensual adult play only**
+
+## Contributing
+
+PRs welcome! Some ideas for improvements:
+- [ ] Bluetooth collar support
+- [ ] Pattern presets (slow build, random, etc.)
+- [ ] Multi-sub support
+- [ ] Session statistics/scoring
+- [ ] OTA firmware updates
 
 ## License
 
-MIT
+MIT License - do whatever you want with it.
+
+## Acknowledgments
+
+- Built with [PlatformIO](https://platformio.org/), [React](https://react.dev/), [Vite](https://vitejs.dev/)
+- RF protocol reverse-engineered from CaiXianlin collar remotes
+- Massive props to Openshock for their work with the RF collars
+- Thanks to some random guy off reddit for the idea
+- Inspired by too many late nights and questionable life choices
