@@ -51,6 +51,8 @@ The ESP32 creates its own WiFi network. Connect your phone, open the browser, an
 
 **Total cost: ~$45** (depending on what you already have)
 
+If you don't want to use a 18650 battery, you could power the device from the mains, or a powerbank etc. 
+
 ### Where to Buy
 
 - **ESP32**: Amazon, AliExpress, or electronics suppliers like Adafruit/SparkFun
