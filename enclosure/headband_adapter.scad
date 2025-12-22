@@ -6,11 +6,11 @@ box_width = 32;      // X dimension
 box_length = 58;     // Y dimension  
 box_height = 10;     // Z dimension
 
-arch_height = 9;    // How deep the arch cuts up into the box (Z)
+arch_height = 8;    // How deep the arch cuts up into the box (Z)
 
 // === ARCH SHAPE PARAMETERS ===
 // These control the elliptical shape of the arch
-arch_radius_x = 30;  // Half-width of arch opening (X direction)
+arch_radius_x = 26;  // Half-width of arch opening (X direction)
 arch_radius_y = 38;  // Curvature along length (Y direction) - larger = flatter curve
 
 // Set this to true for a simple cylindrical arch (curves only in X, not Y)

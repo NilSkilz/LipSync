@@ -144,18 +144,19 @@ void RFTransmitter::sendCommand(uint16_t transmitterId, uint8_t channel,
     // Clamp values
     channel = min(channel, (uint8_t)2);
     intensity = min(intensity, (uint8_t)99);
-    
+
     // Beep should have 0 intensity
     if (cmd == ShockerCommand::Beep) {
         intensity = 0;
     }
-    
+
     buildPacket(transmitterId, channel, static_cast<uint8_t>(cmd), intensity);
-    
+
     // Send multiple times for reliability
-    for (int i = 0; i < 5; i++) {
+    // More repeats and longer gaps improve reception
+    for (int i = 0; i < 8; i++) {
         rmt_write_items(_rmtChannel, _buffer, 44, true);
-        delayMicroseconds(500);
+        delay(5);  // 5ms gap between transmissions
     }
 }
 

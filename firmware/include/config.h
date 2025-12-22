@@ -6,7 +6,7 @@
 
 // RF Transmitter pin (433MHz)
 #ifndef RF_TX_PIN
-#define RF_TX_PIN 15
+#define RF_TX_PIN 23
 #endif
 
 // IMU I2C pins (MPU6050)
@@ -27,8 +27,8 @@
 // WEBSOCKET SERVER CONFIGURATION
 // ============================================
 
-// mDNS hostname (device will be accessible at motiontrainer.local)
-#define MDNS_HOSTNAME "motiontrainer"
+// mDNS hostname (device will be accessible at lipsync.local)
+#define MDNS_HOSTNAME "lipsync"
 
 // WebSocket server port
 #define WS_PORT 80
@@ -47,6 +47,9 @@
 
 // IMU sample rate (Hz)
 #define IMU_SAMPLE_RATE 50
+
+// Enable pitch streaming for visualization (comment out to disable)
+// #define ENABLE_PITCH_STREAMING
 
 // Minimum angle change to detect a peak (degrees)
 #define PEAK_THRESHOLD 3.0

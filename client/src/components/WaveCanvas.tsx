@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useSession } from '../context/SessionContext';
 import { useAudio } from '../hooks/useAudio';
+import { useWakeLock } from '../hooks/useWakeLock';
 
 interface AnimationState {
   phase: number;
@@ -11,7 +12,10 @@ interface AnimationState {
 
 export function WaveCanvas() {
   const { state } = useSession();
-  const { active, cycleSpeed, holdPosition, soundEnabled } = state;
+  const { active, cycleSpeed, holdPosition, soundEnabled, pitchHistory } = state;
+
+  // Keep screen awake when session is active
+  useWakeLock(active);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<AnimationState>({
@@ -130,16 +134,45 @@ export function WaveCanvas() {
     ctx.arc(indicatorX, currentY, 6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw label fixed at top right
-    const state = animationRef.current.lastState;
-    if (state && active) {
-      ctx.font = '16px -apple-system, BlinkMacSystemFont, sans-serif';
-      ctx.fillStyle = waveColor;
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'top';
-      ctx.fillText(state, width - 16, 16);
+    // Draw user's actual motion from pitch history (cyan)
+    if (pitchHistory.length > 1) {
+      // Auto-scale based on observed pitch range
+      const minPitch = Math.min(...pitchHistory);
+      const maxPitch = Math.max(...pitchHistory);
+      const pitchRange = Math.max(maxPitch - minPitch, 10); // At least 10 degrees range
+      const pitchCenter = (maxPitch + minPitch) / 2;
+
+      ctx.strokeStyle = '#00d4ff';
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+
+      const pitchLen = pitchHistory.length;
+      for (let i = 0; i < pitchLen; i++) {
+        // Map pitch to Y: center pitch = centerY, +range/2 = top, -range/2 = bottom
+        const normalizedPitch = (pitchHistory[i] - pitchCenter) / (pitchRange / 2);
+        const y = centerY - normalizedPitch * amplitude;
+        const x = (i / pitchLen) * indicatorX;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Draw current pitch indicator
+      const currentPitchNorm = (pitchHistory[pitchLen - 1] - pitchCenter) / (pitchRange / 2);
+      const currentPitchY = centerY - currentPitchNorm * amplitude;
+      ctx.beginPath();
+      ctx.fillStyle = '#00d4ff';
+      ctx.arc(indicatorX, currentPitchY, 5, 0, Math.PI * 2);
+      ctx.fill();
     }
-  }, [active]);
+
+  }, [active, pitchHistory]);
 
   // Update loop
   useEffect(() => {
@@ -184,22 +217,23 @@ export function WaveCanvas() {
         anim.waveHistory.shift();
       }
 
-      // Check for state change (for beeps) based on plateau wave
-      const transitionDuration = 0.15;
+      // Check for state change (for beeps) - beep at START of transition
       const normalizedPhase = ((anim.phase % 1) + 1) % 1;
 
+      // Detect which half of the cycle we're in
       let newState: 'in' | 'out' | null = null;
-      if (normalizedPhase >= transitionDuration && normalizedPhase < 0.5) {
-        newState = 'in'; // At top plateau
-      } else if (normalizedPhase >= 0.5 + transitionDuration) {
-        newState = 'out'; // At bottom plateau
+      if (normalizedPhase < 0.5) {
+        newState = 'in'; // First half: transitioning/holding at top
+      } else {
+        newState = 'out'; // Second half: transitioning/holding at bottom
       }
 
+      // Beep when crossing 0 (start up) or 0.5 (start down)
       if (newState && newState !== anim.lastState && active) {
         if (newState === 'in') {
-          playBeep(880);
+          playBeep(880); // High beep: start moving up
         } else {
-          playBeep(440);
+          playBeep(440); // Low beep: start moving down
         }
         anim.lastState = newState;
       }

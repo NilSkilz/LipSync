@@ -108,7 +108,7 @@ export function useAudio(soundEnabled: boolean) {
   const playKissLickLoop = useCallback(() => {
     if (kissLickAudioRef.current) return;
 
-    const audio = new Audio('https://yourethetoy.pages.dev/assets/audio/kiss-lick.mp3');
+    const audio = new Audio('/assets/audio/kiss-lick.mp3');
     audio.loop = true;
     audio.play().catch(() => {
       // Autoplay blocked

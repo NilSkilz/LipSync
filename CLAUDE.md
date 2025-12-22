@@ -1,6 +1,6 @@
-# Motion Trainer
+# LipSync
 
-A self-contained motion-tracking training system with haptic feedback. The ESP32 serves both the web app and handles all motion tracking and feedback - no external server needed.
+A self-contained training system with haptic feedback. The ESP32 serves both the web app and handles all motion tracking and feedback - no external server needed.
 
 ## Overview
 
@@ -18,7 +18,7 @@ A self-contained motion-tracking training system with haptic feedback. The ESP32
 ## Project Structure
 
 ```
-motion-trainer/
+lipsync/
 ├── client/                 # React SPA (Vite + TypeScript)
 │   ├── src/
 │   │   ├── components/     # UI components
@@ -72,16 +72,11 @@ pio run -t upload -e esp32dev      # Upload firmware (hold BOOT button)
 pio run -t uploadfs -e esp32dev    # Upload web files to LittleFS
 ```
 
-### First-Time WiFi Setup
+### Connecting
 
 1. Power on ESP32
-2. Connect to "MotionTrainer-Setup" WiFi hotspot
-3. Configure your WiFi credentials
-4. Device will restart and connect to your network
-
-### Accessing the App
-
-Open in browser: `http://motiontrainer.local` or the IP address shown in serial monitor.
+2. Connect to "LipSync" WiFi (password: `lipsync123`)
+3. Open browser to `192.168.4.1` or `http://lipsync.local`
 
 ## WebSocket Protocol
 
@@ -113,7 +108,7 @@ All communication happens over WebSocket at `/ws`.
 Edit `firmware/include/config.h`:
 
 ```cpp
-#define MDNS_HOSTNAME "motiontrainer"  // Access via http://motiontrainer.local
+#define MDNS_HOSTNAME "lipsync"         // Access via http://lipsync.local
 #define WS_PORT 80                      // HTTP/WebSocket port
 #define SHOCKER_TRANSMITTER_ID 12345    // Must match your paired collar
 #define SHOCKER_CHANNEL 0               // 0, 1, or 2
@@ -152,6 +147,6 @@ pio device monitor -b 115200  # Serial monitor
 
 - The ESP32 serves the React app from LittleFS flash storage (~220KB)
 - Uses ESPAsyncWebServer for HTTP and WebSocket on the same port
-- WiFiManager provides captive portal for initial WiFi setup
-- mDNS allows access via `motiontrainer.local` hostname
+- Device creates its own WiFi access point (no external network needed)
+- mDNS allows access via `lipsync.local` hostname
 - Hardware (IMU, RF) is optional - device works without them for testing

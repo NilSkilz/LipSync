@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiManager.h>
 #include <ESPmDNS.h>
 #include <LittleFS.h>
 #include <ESPAsyncWebServer.h>
@@ -14,11 +13,16 @@ RFTransmitter rf(RF_TX_PIN);
 MotionTracker motion;
 AsyncWebServer server(WS_PORT);
 AsyncWebSocket ws("/ws");
-WiFiManager wifiManager;
 
 // Hardware status
 bool rfAvailable = false;
 bool imuAvailable = false;
+
+// Punishment modes
+enum PunishmentMode { PUNISHMENT_OFF = 0, PUNISHMENT_BEEP = 1, PUNISHMENT_VIBRATE = 2, PUNISHMENT_SHOCK = 3 };
+
+// Session modes (normal = motion tracking, others = hold positions)
+enum SessionMode { MODE_NORMAL = 0, MODE_KISS_LICK = 1, MODE_DEEPTHROAT = 2 };
 
 // Session state
 struct SessionConfig {
@@ -27,9 +31,21 @@ struct SessionConfig {
     int targetDepth = DEFAULT_TARGET_DEPTH;
     float tolerance = DEFAULT_TOLERANCE;
     int intensity = DEFAULT_INTENSITY;
+    int maxIntensity = DEFAULT_INTENSITY;  // Maximum intensity cap
+    bool increasingIntensity = true;       // Start low and increase
+    int currentIntensity = 10;             // Current level (when increasing)
     uint16_t transmitterId = SHOCKER_TRANSMITTER_ID;
     uint8_t channel = SHOCKER_CHANNEL;
+    int graceCycles = 0;  // Cycles to skip feedback after target change
+    PunishmentMode punishmentMode = PUNISHMENT_VIBRATE;
+    bool shockWarningGiven = false;  // For shock mode: one warning per speed
+    SessionMode sessionMode = MODE_NORMAL;  // Current session mode
 } session;
+
+const int INTENSITY_START = 10;      // Starting intensity when increasing
+const int INTENSITY_INCREMENT = 5;   // How much to increase each time
+
+const int GRACE_PERIOD_CYCLES = 3;
 
 // Connected client (we only support one at a time)
 AsyncWebSocketClient* connectedClient = nullptr;
@@ -37,8 +53,12 @@ AsyncWebSocketClient* connectedClient = nullptr;
 // Timing
 unsigned long lastSample = 0;
 unsigned long lastBlink = 0;
+unsigned long lastCycleTime = 0;
+unsigned long lastPitchBroadcast = 0;
 const unsigned long SAMPLE_INTERVAL = 1000 / IMU_SAMPLE_RATE;
 const unsigned long BLINK_INTERVAL = 1000;
+const unsigned long PITCH_BROADCAST_INTERVAL = 20;  // Send pitch every 20ms (50Hz, matches IMU)
+const int STALL_CYCLE_COUNT = 3;  // Feedback after this many missed cycles
 
 // Forward declarations
 void handleWebSocketMessage(void* arg, uint8_t* data, size_t len);
@@ -72,7 +92,7 @@ void listDir(fs::FS &fs, const char* dirname, uint8_t levels) {
 void setup() {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("\n\n=== Motion Trainer Firmware (Web Server Mode) ===");
+    Serial.println("\n\n=== LipSync Firmware ===");
 
     // Status LED
     pinMode(LED_PIN, OUTPUT);
@@ -99,29 +119,13 @@ void setup() {
         Serial.println("IMU init failed - continuing without IMU");
     }
 
-    // WiFi Manager custom parameters
-    WiFiManagerParameter customTxId("txid", "Transmitter ID", String(session.transmitterId).c_str(), 6);
-    WiFiManagerParameter customChannel("channel", "Channel (0-2)", String(session.channel).c_str(), 2);
-
-    wifiManager.addParameter(&customTxId);
-    wifiManager.addParameter(&customChannel);
-
-    // Start WiFi Manager
-    wifiManager.setConfigPortalTimeout(180);
-
-    if (!wifiManager.autoConnect("MotionTrainer-Setup")) {
-        Serial.println("WiFi connection failed, restarting...");
-        delay(3000);
-        ESP.restart();
-    }
-
-    // Read custom parameters
-    session.transmitterId = atoi(customTxId.getValue());
-    session.channel = atoi(customChannel.getValue()) % 3;
-
-    Serial.printf("Connected to WiFi: %s\n", WiFi.SSID().c_str());
-    Serial.printf("IP Address: %s\n", WiFi.localIP().toString().c_str());
-    Serial.printf("Transmitter ID: %d, Channel: %d\n", session.transmitterId, session.channel);
+    // Start Access Point
+    WiFi.mode(WIFI_AP);
+    const char* apSSID = "LipSync";
+    const char* apPassword = "lipsync123";  // Min 8 characters
+    WiFi.softAP(apSSID, apPassword);
+    Serial.printf("Access Point started: %s (password: %s)\n", apSSID, apPassword);
+    Serial.printf("AP IP Address: %s\n", WiFi.softAPIP().toString().c_str());
 
     // Start mDNS
     if (MDNS.begin(MDNS_HOSTNAME)) {
@@ -151,6 +155,16 @@ void setup() {
         if (LittleFS.exists("/assets/index.css")) {
             Serial.println("  File exists!");
             request->send(LittleFS, "/assets/index.css", "text/css");
+        } else {
+            Serial.println("  File NOT found!");
+            request->send(404, "text/plain", "File not found");
+        }
+    });
+    server.on("/assets/audio/kiss-lick.mp3", HTTP_GET, [](AsyncWebServerRequest* request) {
+        Serial.println("Request for /assets/audio/kiss-lick.mp3");
+        if (LittleFS.exists("/assets/audio/kiss-lick.mp3")) {
+            Serial.println("  File exists!");
+            request->send(LittleFS, "/assets/audio/kiss-lick.mp3", "audio/mpeg");
         } else {
             Serial.println("  File NOT found!");
             request->send(404, "text/plain", "File not found");
@@ -233,6 +247,7 @@ void loop() {
         // Check for completed cycle
         if (motion.hasCycle()) {
             CycleEvent cycle = motion.getCycle();
+            lastCycleTime = millis();
 
             if (session.active) {
                 evaluateAndFeedback(cycle);
@@ -249,6 +264,95 @@ void loop() {
                 String json;
                 serializeJson(doc, json);
                 sendToClient(json);
+            }
+        }
+
+        #ifdef ENABLE_PITCH_STREAMING
+        // Broadcast pitch at throttled rate for visualization (25Hz)
+        if (connectedClient && millis() - lastPitchBroadcast >= 40) {
+            lastPitchBroadcast = millis();
+            JsonDocument doc;
+            doc["type"] = "pitch";
+            doc["data"]["pitch"] = motion.getPitch();
+            String json;
+            serializeJson(doc, json);
+            sendToClient(json);
+        }
+        #endif
+
+        // Check for stall (no motion for too long) - only in normal mode
+        if (session.active && session.sessionMode == MODE_NORMAL && session.graceCycles == 0 && lastCycleTime > 0) {
+            unsigned long expectedCycleTime = 60000 / session.targetBPM;
+            unsigned long stallTimeout = expectedCycleTime * STALL_CYCLE_COUNT;
+            unsigned long timeSinceLastCycle = millis() - lastCycleTime;
+
+            if (timeSinceLastCycle > stallTimeout && session.punishmentMode != PUNISHMENT_OFF) {
+                Serial.printf("STALL detected: no motion for %lums (timeout: %lums)\n",
+                              timeSinceLastCycle, stallTimeout);
+
+                // Calculate feedback intensity
+                int feedbackIntensity;
+                if (session.increasingIntensity) {
+                    feedbackIntensity = session.currentIntensity;
+                } else {
+                    feedbackIntensity = session.maxIntensity;
+                }
+
+                const char* punishmentType = "none";
+                bool isWarning = false;
+
+                if (rfAvailable) {
+                    switch (session.punishmentMode) {
+                        case PUNISHMENT_BEEP:
+                            rf.beep(session.transmitterId, session.channel);
+                            punishmentType = "beep";
+                            break;
+                        case PUNISHMENT_VIBRATE:
+                            rf.vibrate(session.transmitterId, session.channel, feedbackIntensity);
+                            punishmentType = "vibrate";
+                            break;
+                        case PUNISHMENT_SHOCK:
+                            // One warning per speed, then shock
+                            if (!session.shockWarningGiven) {
+                                rf.vibrate(session.transmitterId, session.channel, feedbackIntensity);
+                                punishmentType = "vibrate";
+                                isWarning = true;
+                                session.shockWarningGiven = true;
+                                // Grace period after warning to correct
+                                session.graceCycles = GRACE_PERIOD_CYCLES;
+                            } else {
+                                rf.shock(session.transmitterId, session.channel, feedbackIntensity);
+                                punishmentType = "shock";
+                                // Grace period after shock to recover
+                                session.graceCycles = GRACE_PERIOD_CYCLES;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                // Increase intensity for next time (if enabled), but not for warnings
+                if (session.increasingIntensity && !isWarning) {
+                    session.currentIntensity = min(session.currentIntensity + INTENSITY_INCREMENT, session.maxIntensity);
+                    Serial.printf("Next intensity: %d%% (max: %d%%)\n", session.currentIntensity, session.maxIntensity);
+                }
+
+                // Reset timer to avoid continuous feedback
+                lastCycleTime = millis();
+
+                // Notify client
+                if (connectedClient) {
+                    JsonDocument doc;
+                    doc["type"] = "punishment";
+                    doc["data"]["punishmentType"] = punishmentType;
+                    doc["data"]["intensity"] = feedbackIntensity;
+                    doc["data"]["isWarning"] = isWarning;
+                    doc["data"]["reason"] = "stall";
+                    String json;
+                    serializeJson(doc, json);
+                    sendToClient(json);
+                }
             }
         }
     }
@@ -298,7 +402,11 @@ void handleWebSocketMessage(void* arg, uint8_t* data, size_t len) {
 
         if (strcmp(type, "start") == 0) {
             session.active = true;
-            Serial.println("Session STARTED");
+            session.graceCycles = GRACE_PERIOD_CYCLES;
+            session.currentIntensity = INTENSITY_START;  // Reset intensity
+            session.shockWarningGiven = false;
+            lastCycleTime = millis();  // Reset stall timer
+            Serial.printf("Session STARTED - grace period: %d cycles\n", GRACE_PERIOD_CYCLES);
 
             // Beep to confirm
             if (rfAvailable) {
@@ -327,12 +435,25 @@ void handleWebSocketMessage(void* arg, uint8_t* data, size_t len) {
             sendToClient(json);
 
         } else if (strcmp(type, "setTargets") == 0) {
-            if (doc["data"]["paceBPM"].is<int>())
-                session.targetBPM = doc["data"]["paceBPM"];
+            bool bpmChanged = false;
+            if (doc["data"]["paceBPM"].is<int>()) {
+                int newBPM = doc["data"]["paceBPM"];
+                if (newBPM != session.targetBPM) {
+                    session.targetBPM = newBPM;
+                    bpmChanged = true;
+                }
+            }
             if (doc["data"]["depthDegrees"].is<int>())
                 session.targetDepth = doc["data"]["depthDegrees"];
             if (doc["data"]["tolerance"].is<float>())
                 session.tolerance = doc["data"]["tolerance"];
+
+            // Give user grace period to adjust to new BPM
+            if (bpmChanged) {
+                session.graceCycles = GRACE_PERIOD_CYCLES;
+                session.shockWarningGiven = false;  // Reset warning for new speed
+                Serial.printf("BPM changed - grace period: %d cycles\n", GRACE_PERIOD_CYCLES);
+            }
 
             Serial.printf("Targets: BPM=%d, Depth=%d, Tol=%.2f\n",
                           session.targetBPM, session.targetDepth, session.tolerance);
@@ -351,6 +472,18 @@ void handleWebSocketMessage(void* arg, uint8_t* data, size_t len) {
                 session.intensity = doc["data"]["intensity"];
 
             Serial.printf("Intensity: %d\n", session.intensity);
+
+        } else if (strcmp(type, "setMaxIntensity") == 0) {
+            if (doc["data"]["maxIntensity"].is<int>())
+                session.maxIntensity = doc["data"]["maxIntensity"];
+
+            Serial.printf("Max Intensity: %d\n", session.maxIntensity);
+
+        } else if (strcmp(type, "setIncreasingIntensity") == 0) {
+            if (doc["data"]["enabled"].is<bool>())
+                session.increasingIntensity = doc["data"]["enabled"];
+
+            Serial.printf("Increasing Intensity: %s\n", session.increasingIntensity ? "ON" : "OFF");
 
         } else if (strcmp(type, "setTransmitter") == 0) {
             if (doc["data"]["transmitterId"].is<int>())
@@ -377,6 +510,40 @@ void handleWebSocketMessage(void* arg, uint8_t* data, size_t len) {
                 Serial.println("(RF not available)");
             }
 
+        } else if (strcmp(type, "testShock") == 0) {
+            int intensity = doc["data"]["intensity"] | 30;
+            Serial.printf("Test shock: %d%%\n", intensity);
+            if (rfAvailable) {
+                rf.shock(session.transmitterId, session.channel, intensity);
+            } else {
+                Serial.println("(RF not available)");
+            }
+
+        } else if (strcmp(type, "setPunishmentMode") == 0) {
+            const char* mode = doc["data"]["mode"];
+            if (strcmp(mode, "off") == 0) {
+                session.punishmentMode = PUNISHMENT_OFF;
+            } else if (strcmp(mode, "beep") == 0) {
+                session.punishmentMode = PUNISHMENT_BEEP;
+            } else if (strcmp(mode, "vibrate") == 0) {
+                session.punishmentMode = PUNISHMENT_VIBRATE;
+            } else if (strcmp(mode, "shock") == 0) {
+                session.punishmentMode = PUNISHMENT_SHOCK;
+            }
+            Serial.printf("Punishment mode: %s\n", mode);
+
+        } else if (strcmp(type, "setMode") == 0) {
+            const char* mode = doc["data"]["mode"];
+            if (strcmp(mode, "normal") == 0) {
+                session.sessionMode = MODE_NORMAL;
+            } else if (strcmp(mode, "kissLick") == 0) {
+                session.sessionMode = MODE_KISS_LICK;
+            } else if (strcmp(mode, "deepthroat") == 0) {
+                session.sessionMode = MODE_DEEPTHROAT;
+            }
+            Serial.printf("Session mode: %s (feedback %s)\n", mode,
+                          session.sessionMode == MODE_NORMAL ? "enabled" : "disabled");
+
         } else if (strcmp(type, "getState") == 0) {
             broadcastState();
         }
@@ -384,6 +551,11 @@ void handleWebSocketMessage(void* arg, uint8_t* data, size_t len) {
 }
 
 void evaluateAndFeedback(const CycleEvent& cycle) {
+    // Skip feedback in hold modes (kissLick, deepthroat)
+    if (session.sessionMode != MODE_NORMAL) {
+        return;
+    }
+
     // Calculate expected duration from target BPM
     float expectedDuration = 60000.0f / session.targetBPM;
 
@@ -391,8 +563,8 @@ void evaluateAndFeedback(const CycleEvent& cycle) {
     float paceDeviation = abs(cycle.duration - expectedDuration) / expectedDuration;
     float depthDeviation = abs(cycle.depth - session.targetDepth) / (float)session.targetDepth;
 
-    // Combined deviation (weighted)
-    float deviation = (paceDeviation * 0.6f) + (depthDeviation * 0.4f);
+    // Combined deviation (weighted - pace is primary)
+    float deviation = (paceDeviation * 0.9f) + (depthDeviation * 0.1f);
     deviation = min(1.0f, deviation);
 
     // Calculate current BPM
@@ -420,15 +592,82 @@ void evaluateAndFeedback(const CycleEvent& cycle) {
                   cycle.depth, session.targetDepth,
                   deviation * 100);
 
-    // Trigger feedback if deviation exceeds tolerance
-    if (deviation > session.tolerance) {
-        // Scale intensity with deviation
-        int feedbackIntensity = session.intensity * (0.5f + deviation * 0.5f);
-        feedbackIntensity = min(feedbackIntensity, 100);
+    // Check grace period
+    if (session.graceCycles > 0) {
+        session.graceCycles--;
+        Serial.printf("Grace period: %d cycles remaining\n", session.graceCycles);
+        return;
+    }
 
-        Serial.printf("FEEDBACK: %d%% vibrate\n", feedbackIntensity);
+    // Trigger feedback if deviation exceeds tolerance
+    if (deviation > session.tolerance && session.punishmentMode != PUNISHMENT_OFF) {
+        // Calculate feedback intensity
+        int feedbackIntensity;
+        if (session.increasingIntensity) {
+            // Use current level (starts low, increases each time)
+            feedbackIntensity = session.currentIntensity;
+        } else {
+            // Use max intensity directly
+            feedbackIntensity = session.maxIntensity;
+        }
+
+        const char* punishmentType = "none";
+        bool isWarning = false;
+
         if (rfAvailable) {
-            rf.vibrate(session.transmitterId, session.channel, feedbackIntensity);
+            switch (session.punishmentMode) {
+                case PUNISHMENT_BEEP:
+                    Serial.println("FEEDBACK: beep");
+                    rf.beep(session.transmitterId, session.channel);
+                    punishmentType = "beep";
+                    break;
+                case PUNISHMENT_VIBRATE:
+                    Serial.printf("FEEDBACK: %d%% vibrate\n", feedbackIntensity);
+                    rf.vibrate(session.transmitterId, session.channel, feedbackIntensity);
+                    punishmentType = "vibrate";
+                    break;
+                case PUNISHMENT_SHOCK:
+                    // One warning per speed, then shock
+                    if (!session.shockWarningGiven) {
+                        Serial.printf("FEEDBACK: WARNING vibrate %d%%\n", feedbackIntensity);
+                        rf.vibrate(session.transmitterId, session.channel, feedbackIntensity);
+                        punishmentType = "vibrate";
+                        isWarning = true;
+                        session.shockWarningGiven = true;
+                        // Grace period after warning to correct
+                        session.graceCycles = GRACE_PERIOD_CYCLES;
+                        Serial.printf("Grace period after warning: %d cycles\n", GRACE_PERIOD_CYCLES);
+                    } else {
+                        Serial.printf("FEEDBACK: %d%% SHOCK\n", feedbackIntensity);
+                        rf.shock(session.transmitterId, session.channel, feedbackIntensity);
+                        punishmentType = "shock";
+                        // Grace period after shock to recover
+                        session.graceCycles = GRACE_PERIOD_CYCLES;
+                        Serial.printf("Grace period after shock: %d cycles\n", GRACE_PERIOD_CYCLES);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // Increase intensity for next time (if enabled), but not for warnings
+        if (session.increasingIntensity && !isWarning) {
+            session.currentIntensity = min(session.currentIntensity + INTENSITY_INCREMENT, session.maxIntensity);
+            Serial.printf("Next intensity: %d%% (max: %d%%)\n", session.currentIntensity, session.maxIntensity);
+        }
+
+        // Notify client of punishment
+        if (connectedClient) {
+            JsonDocument doc;
+            doc["type"] = "punishment";
+            doc["data"]["punishmentType"] = punishmentType;
+            doc["data"]["intensity"] = feedbackIntensity;
+            doc["data"]["isWarning"] = isWarning;
+            doc["data"]["deviation"] = deviation;
+            String json;
+            serializeJson(doc, json);
+            sendToClient(json);
         }
     }
 }

@@ -106,41 +106,50 @@ void MotionTracker::calculateOrientation(int16_t ax, int16_t ay, int16_t az,
 bool MotionTracker::detectPeak() {
     bool isIncreasing = _pitch > _lastPitch;
     bool directionChanged = (_wasIncreasing && !isIncreasing) || (!_wasIncreasing && isIncreasing);
-    
-    // Check if movement is significant
-    float movement = abs(_pitch - _prevPitch);
-    
+
     _prevPitch = _lastPitch;
     _lastPitch = _pitch;
     _wasIncreasing = isIncreasing;
-    
-    return directionChanged && movement > PEAK_THRESHOLD;
+
+    // Check if we've traveled enough since last peak (use accumulated range, not instantaneous movement)
+    float range = _maxPitch - _minPitch;
+
+    return directionChanged && range > PEAK_THRESHOLD;
 }
 
 void MotionTracker::update() {
     int16_t ax, ay, az, gx, gy, gz;
     _mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-    
+
     calculateOrientation(ax, ay, az, gx, gy, gz);
-    
+
     // Track min/max for depth
     _minPitch = min(_minPitch, _pitch);
     _maxPitch = max(_maxPitch, _pitch);
     
-    // Check for peak (direction change)
+    // Check for peak (direction change = one motion complete)
     if (detectPeak()) {
         unsigned long now = millis();
-        unsigned long cycleTime = now - _lastPeakTime;
-        
-        // Valid cycle?
-        if (cycleTime >= MIN_CYCLE_TIME && cycleTime <= MAX_CYCLE_TIME && _lastPeakTime > 0) {
-            _lastCycle.duration = cycleTime;
-            _lastCycle.depth = _maxPitch - _minPitch;
+        unsigned long motionTime = now - _lastPeakTime;
+        float depth = _maxPitch - _minPitch;
+        const char* direction = _wasIncreasing ? "DOWN" : "UP";  // Just changed, so opposite
+
+        // Valid motion?
+        if (motionTime >= MIN_CYCLE_TIME && motionTime <= MAX_CYCLE_TIME && _lastPeakTime > 0) {
+            _lastCycle.duration = motionTime * 2;  // Full cycle = 2 motions
+            _lastCycle.depth = depth;
             _lastCycle.timestamp = now;
             _cycleReady = true;
+
+            float bpm = 30000.0f / motionTime;  // 60000 / (motionTime * 2)
+            Serial.printf(">>> %s motion: %3.0f BPM | depth=%4.1f° | %lums\n",
+                          direction, bpm, depth, motionTime);
+        } else if (_lastPeakTime > 0) {
+            Serial.printf(">>> %s motion rejected: %lums (need %d-%dms)\n",
+                          direction, motionTime, MIN_CYCLE_TIME, MAX_CYCLE_TIME);
         }
-        
-        // Reset for next cycle
+
+        // Reset for next motion
         _lastPeakTime = now;
         _minPitch = _pitch;
         _maxPitch = _pitch;

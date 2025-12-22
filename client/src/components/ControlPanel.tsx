@@ -3,10 +3,11 @@ import { useSession } from '../context/SessionContext';
 import { useAudio } from '../hooks/useAudio';
 import { ActionButton } from './ActionButton';
 import { TimerControl } from './TimerControl';
+import { IntensityMeter } from './IntensityMeter';
 
 export function ControlPanel() {
   const { state, actions } = useSession();
-  const { active, mode, soundEnabled, timerSeconds } = state;
+  const { active, mode, soundEnabled, timerSeconds, currentIntensity, maxIntensity, increasingIntensity } = state;
   const deepthroatTimeoutRef = useRef<number | null>(null);
 
   const { initAudio, startHum, stopHum, playKissLickLoop, stopKissLickLoop } = useAudio(soundEnabled);
@@ -67,33 +68,18 @@ export function ControlPanel() {
     }, timerSeconds * 1000);
   }, [mode, active, timerSeconds, actions, initAudio, startHum, stopHum, stopKissLickLoop]);
 
-  const handleTestVibrate = useCallback(() => {
-    actions.testVibrate(20);
-  }, [actions]);
-
-  const handleTestBeep = useCallback(() => {
-    actions.testBeep();
-  }, [actions]);
-
   const handleToggleSound = useCallback(() => {
     initAudio();
     actions.toggleSound();
   }, [actions, initAudio]);
 
+  const handleOpenSettings = useCallback(() => {
+    actions.toggleSettings();
+  }, [actions]);
+
   return (
     <div className="control-panel">
       <div className="icon-row">
-        <ActionButton variant="icon" onClick={handleTestVibrate}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M2 12c2-4 4-6 6-6s4 4 6 4 4-4 6-4c2 0 4 2 6 6" />
-          </svg>
-        </ActionButton>
-        <ActionButton variant="icon" onClick={handleTestBeep}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-        </ActionButton>
         <ActionButton
           variant="icon"
           onClick={handleToggleSound}
@@ -105,17 +91,28 @@ export function ControlPanel() {
             <path d="M19.07 4.93a10 10 0 010 14.14" />
           </svg>
         </ActionButton>
+        <ActionButton variant="icon" onClick={handleOpenSettings}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </ActionButton>
       </div>
 
-      <ActionButton onClick={handleKissLick} active={mode === 'kissLick'}>
-        {mode === 'kissLick' ? 'Stop Kiss & Lick' : 'Kiss & Lick'}
-      </ActionButton>
+      {increasingIntensity && (
+        <IntensityMeter current={currentIntensity} max={maxIntensity} />
+      )}
+
+      <div className="hold-modes-row">
+        <button className={`hold-mode-btn ${mode === 'deepthroat' ? 'active' : ''}`} onClick={handleDeepthroat}>
+          {mode === 'deepthroat' ? '■ Stop' : '● Hold'}
+        </button>
+        <button className={`hold-mode-btn ${mode === 'kissLick' ? 'active' : ''}`} onClick={handleKissLick}>
+          {mode === 'kissLick' ? '■ Stop' : '♥ Kiss'}
+        </button>
+      </div>
 
       <TimerControl />
-
-      <ActionButton onClick={handleDeepthroat}>
-        Deepthroat
-      </ActionButton>
 
       <ActionButton variant="outline" onClick={handleStartPause} active={active}>
         {active ? 'Pause' : 'Start'}
