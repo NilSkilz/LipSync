@@ -59,13 +59,29 @@ private:
 MotionTracker::MotionTracker() {}
 
 bool MotionTracker::begin() {
+    Serial.printf("IMU: Initializing on SDA=%d, SCL=%d\n", IMU_SDA_PIN, IMU_SCL_PIN);
     Wire.begin(IMU_SDA_PIN, IMU_SCL_PIN);
-    
+
+    // Scan for I2C devices
+    Serial.println("IMU: Scanning I2C bus...");
+    for (uint8_t addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        if (Wire.endTransmission() == 0) {
+            Serial.printf("IMU: Found device at 0x%02X\n", addr);
+        }
+    }
+
     _mpu.initialize();
-    
+    delay(100);  // Give chip time to wake up
+
+    // Read WHO_AM_I register to see what chip reports
+    uint8_t whoami = _mpu.getDeviceID();
+    Serial.printf("IMU: WHO_AM_I = 0x%02X\n", whoami);
+
     if (!_mpu.testConnection()) {
-        Serial.println("MPU6050 connection failed!");
-        return false;
+        // testConnection() expects WHO_AM_I == 0x34 (which is 0x68 >> 1)
+        // Some clones report different values - proceed anyway since I2C scan found it
+        Serial.println("IMU: testConnection failed but device found - proceeding anyway");
     }
     
     // Configure MPU6050

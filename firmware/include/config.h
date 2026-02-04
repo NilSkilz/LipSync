@@ -1,26 +1,35 @@
 #pragma once
 
 // ============================================
-// PIN CONFIGURATION
+// PIN CONFIGURATION (XIAO ESP32C3)
 // ============================================
 
-// RF Transmitter pin (433MHz)
+// RF Transmitter pin (433MHz FS1000A)
 #ifndef RF_TX_PIN
-#define RF_TX_PIN 23
+#define RF_TX_PIN 10  // D10
 #endif
 
-// IMU I2C pins (MPU6050)
+// IMU I2C pins (MPU6050/GY-521)
 #ifndef IMU_SDA_PIN
-#define IMU_SDA_PIN 21
+#define IMU_SDA_PIN 6  // D4
 #endif
 
 #ifndef IMU_SCL_PIN
-#define IMU_SCL_PIN 22
+#define IMU_SCL_PIN 7  // D5
 #endif
 
-// Status LED
+// Status LEDs
 #ifndef LED_PIN
-#define LED_PIN 2
+#define LED_PIN 2  // D0 - Green (connection status)
+#endif
+
+#ifndef LED2_PIN
+#define LED2_PIN 5  // D3 - Red (session status)
+#endif
+
+// Button (active-low, uses internal pull-up)
+#ifndef BUTTON_PIN
+#define BUTTON_PIN 3  // D1
 #endif
 
 // ============================================

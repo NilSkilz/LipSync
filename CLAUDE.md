@@ -6,7 +6,7 @@ A self-contained training system with haptic feedback. The ESP32 serves both the
 
 ```
 ┌──────────────────┐         ┌──────────────────────────────────┐
-│   Phone/Tablet   │         │         ESP32 Device             │
+│   Phone/Tablet   │         │       XIAO ESP32C3 + LiPo        │
 │    (Browser)     │◄──────►│                                  │
 │                  │  WiFi   │  - Web server (serves React app) │
 │  Opens:          │         │  - WebSocket server (/ws)        │
@@ -44,9 +44,12 @@ lipsync/
 
 ## Hardware
 
-- **Board**: ESP32-WROOM-32 Dev Module (generic, with CH340C USB-serial)
-- **IMU**: MPU6050 (I2C: SDA=21, SCL=22) - optional
-- **RF Transmitter**: 433MHz (pin 15) - for CaiXianlin protocol collar
+- **Board**: Seeed XIAO ESP32C3
+- **Power**: 3.7V LiPo battery (connects to BAT+/BAT- pads)
+- **IMU**: MPU6050/GY-521 (I2C: SDA=GPIO6/D4, SCL=GPIO7/D5) - optional
+- **RF Transmitter**: FS1000A 433MHz (DATA=GPIO10/D10) - for CaiXianlin protocol collar
+- **LEDs**: Green on GPIO2/D0 (connection), Red on GPIO5/D3 (session)
+- **Button**: Momentary switch on GPIO9/D9 to GND (active-low, uses internal pull-up)
 
 ## Building & Deploying
 
@@ -68,8 +71,8 @@ cd client && npm run build && cp -r dist/* ../firmware/data/
 
 # Upload firmware and filesystem to ESP32
 cd ../firmware
-pio run -t upload -e esp32dev      # Upload firmware (hold BOOT button)
-pio run -t uploadfs -e esp32dev    # Upload web files to LittleFS
+pio run -t upload -e seeed_xiao_esp32c3      # Upload firmware
+pio run -t uploadfs -e seeed_xiao_esp32c3    # Upload web files to LittleFS
 ```
 
 ### Connecting
@@ -145,8 +148,10 @@ pio device monitor -b 115200  # Serial monitor
 
 ## Notes
 
-- The ESP32 serves the React app from LittleFS flash storage (~220KB)
+- The XIAO ESP32C3 serves the React app from LittleFS flash storage (~220KB)
 - Uses ESPAsyncWebServer for HTTP and WebSocket on the same port
 - Device creates its own WiFi access point (no external network needed)
 - mDNS allows access via `lipsync.local` hostname
 - Hardware (IMU, RF) is optional - device works without them for testing
+- LiPo battery connects to BAT+/BAT- pads on XIAO; built-in charging via USB-C
+- RF transmitter runs at 3.3V (reduced range compared to 5V, but sufficient for close range)

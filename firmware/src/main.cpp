@@ -7,6 +7,7 @@
 #include "config.h"
 #include "rf_transmitter.h"
 #include "motion_tracker.h"
+#include "esp_sleep.h"
 
 // Components
 RFTransmitter rf(RF_TX_PIN);
@@ -17,6 +18,10 @@ AsyncWebSocket ws("/ws");
 // Hardware status
 bool rfAvailable = false;
 bool imuAvailable = false;
+
+// Deep sleep
+const unsigned long IDLE_SLEEP_TIMEOUT = 1 * 60 * 1000; // 1 minute idle timeout
+unsigned long lastActivityTime = 0;
 
 // Punishment modes
 enum PunishmentMode { PUNISHMENT_OFF = 0, PUNISHMENT_BEEP = 1, PUNISHMENT_VIBRATE = 2, PUNISHMENT_SHOCK = 3 };
@@ -55,10 +60,12 @@ unsigned long lastSample = 0;
 unsigned long lastBlink = 0;
 unsigned long lastCycleTime = 0;
 unsigned long lastPitchBroadcast = 0;
+unsigned long buttonPressStart = 0;
 const unsigned long SAMPLE_INTERVAL = 1000 / IMU_SAMPLE_RATE;
 const unsigned long BLINK_INTERVAL = 1000;
 const unsigned long PITCH_BROADCAST_INTERVAL = 20;  // Send pitch every 20ms (50Hz, matches IMU)
 const int STALL_CYCLE_COUNT = 3;  // Feedback after this many missed cycles
+const unsigned long BUTTON_HOLD_TIME = 1000;  // Hold button 1 second to reset
 
 // Forward declarations
 void handleWebSocketMessage(void* arg, uint8_t* data, size_t len);
@@ -89,14 +96,56 @@ void listDir(fs::FS &fs, const char* dirname, uint8_t levels) {
     }
 }
 
+void enterDeepSleep() {
+    Serial.println("Entering deep sleep...");
+
+    // Turn off LEDs
+    digitalWrite(LED_PIN, LOW);
+    digitalWrite(LED2_PIN, LOW);
+
+    // Stop services cleanly
+    WiFi.mode(WIFI_OFF);
+    btStop();
+
+    // Wake on button press (D1 = GPIO3, active LOW)
+    esp_deep_sleep_enable_gpio_wakeup(
+        BIT(GPIO_NUM_3),
+        ESP_GPIO_WAKEUP_GPIO_LOW
+    );
+
+    delay(100); // Let serial flush
+    esp_deep_sleep_start();
+}
+
 void setup() {
     Serial.begin(115200);
     delay(1000);
     Serial.println("\n\n=== LipSync Firmware ===");
 
-    // Status LED
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, HIGH);
+    esp_sleep_wakeup_cause_t wakeReason = esp_sleep_get_wakeup_cause();
+    if (wakeReason == ESP_SLEEP_WAKEUP_GPIO) {
+        Serial.println("Woke from deep sleep via button");
+    } else {
+        Serial.println("Normal boot");
+    }
+
+    // Status LEDs
+    pinMode(LED_PIN, OUTPUT);   // LED1: Green - Connection status
+    pinMode(LED2_PIN, OUTPUT);  // LED2: Red - Session status
+
+    // Blink LEDs on boot to verify wiring
+    Serial.println("LED test...");
+    for (int i = 0; i < 3; i++) {
+        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED2_PIN, HIGH);
+        delay(150);
+        digitalWrite(LED_PIN, LOW);
+        digitalWrite(LED2_PIN, LOW);
+        delay(150);
+    }
+
+    // Reset button (active-low with internal pull-up)
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
 
     // Initialize LittleFS
     if (!LittleFS.begin(true)) {
@@ -192,16 +241,36 @@ void setup() {
     Serial.println("Setup complete!");
     Serial.printf("Open: http://%s.local or http://%s\n",
                   MDNS_HOSTNAME,
-                  WiFi.localIP().toString().c_str());
+                  WiFi.softAPIP().toString().c_str());
+    lastActivityTime = millis();
 }
 
 void loop() {
-    // Blink LED - fast when client connected, slow when waiting
+    unsigned long now = millis();
+    // Check reset button (hold for 1 second to reset)
+    if (digitalRead(BUTTON_PIN) == LOW) {
+        lastActivityTime = now;
+        if (buttonPressStart == 0) {
+            buttonPressStart = millis();
+            Serial.println("Button pressed - hold 1s to reset");
+        } else if (millis() - buttonPressStart >= BUTTON_HOLD_TIME) {
+            Serial.println("Resetting...");
+            delay(100);
+            ESP.restart();
+        }
+    } else {
+        buttonPressStart = 0;
+    }
+
+    // LED1: Blink - fast when client connected, slow when waiting
     unsigned long blinkRate = connectedClient ? 200 : 1000;
     if (millis() - lastBlink >= blinkRate) {
         lastBlink = millis();
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     }
+
+    // LED2: Solid when session active
+    digitalWrite(LED2_PIN, session.active ? HIGH : LOW);
 
     // Handle serial commands for testing
     if (Serial.available()) {
@@ -228,8 +297,12 @@ void loop() {
                 connectedClient ? "CONNECTED" : "NONE");
             Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
             Serial.printf("Transmitter ID: %d, Channel: %d\n", session.transmitterId, session.channel);
+        } else if (cmd == "r" || cmd == "reset") {
+            Serial.println("Resetting...");
+            delay(100);
+            ESP.restart();
         } else if (cmd == "h" || cmd == "help") {
-            Serial.println("Commands: v=vibrate, b=beep, s=status, h=help");
+            Serial.println("Commands: v=vibrate, b=beep, s=status, r=reset, h=help");
         } else if (cmd.length() > 0) {
             Serial.println("Unknown command. Type 'h' for help.");
         }
@@ -246,6 +319,7 @@ void loop() {
 
         // Check for completed cycle
         if (motion.hasCycle()) {
+            lastActivityTime = now;
             CycleEvent cycle = motion.getCycle();
             lastCycleTime = millis();
 
@@ -356,11 +430,20 @@ void loop() {
             }
         }
     }
+    if (!session.active &&
+        !connectedClient &&
+        (now - lastActivityTime > IDLE_SLEEP_TIMEOUT)) {
+
+        Serial.println("Idle timeout reached");
+        delay(200);
+        enterDeepSleep();
+    }
 }
 
 void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
     switch (type) {
         case WS_EVT_CONNECT:
+            lastActivityTime = millis();
             Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
             connectedClient = client;
             broadcastState();
@@ -375,6 +458,7 @@ void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventTyp
             break;
 
         case WS_EVT_DATA:
+            lastActivityTime = millis();
             handleWebSocketMessage(arg, data, len);
             break;
 

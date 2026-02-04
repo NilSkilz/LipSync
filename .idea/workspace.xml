@@ -5,37 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="282d18eb-6bee-46c9-8ebc-0a144f29f96b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/client/public/assets/audio/kiss-lick.mp3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/src/components/IntensityMeter.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/src/components/LearnPage.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/src/components/PunishmentFlash.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/src/components/Settings.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/src/components/StartPage.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/src/hooks/useWakeLock.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/deploy.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/enclosure/enclosure.scad" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/enclosure/enclosure2.scad" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/client/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/ControlPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/ControlPanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/components/WaveCanvas.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/components/WaveCanvas.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/context/SessionContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/context/SessionContext.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/hooks/useAudio.ts" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/hooks/useAudio.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/styles/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/styles/index.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/enclosure/headband_adapter.scad" beforeDir="false" afterPath="$PROJECT_DIR$/enclosure/headband_adapter.scad" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/data/assets/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/data/assets/index.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/data/assets/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/data/assets/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/data/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/data/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/enclosure/base.stl" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/enclosure/enclosure.scad" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/enclosure/enclosure2.scad" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/enclosure/headband_adapter.scad" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/firmware/include/config.h" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/include/config.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/firmware/platformio.ini" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/platformio.ini" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/firmware/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/src/main.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/firmware/src/motion_tracker.h" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/src/motion_tracker.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/src/rf_transmitter.h" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/src/rf_transmitter.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshots/lovesense.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshots/wmbbflqd8g5g1.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/screenshots/screenshot.png" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,26 +34,26 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "git-widget-placeholder": "main",
-    "javascript.preferred.runtime.type.id": "node",
-    "last_opened_file_path": "/Users/rob.stokes/Projects/Personal/motion-trainer-server",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "ts.external.directory.path": "/Users/rob.stokes/Projects/Personal/motion-trainer-server/client/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/rob.stokes/Projects/Personal/motion-trainer-server&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/rob.stokes/Projects/Personal/motion-trainer-server/client/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/screenshots" />
@@ -82,7 +63,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-c7e53b3be11b-JavaScript-WS-253.28294.332" />
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.29346.242" />
       </set>
     </attachedChunks>
   </component>
@@ -98,6 +79,12 @@
       <workItem from="1765486135293" duration="3191000" />
       <workItem from="1765544062572" duration="17318000" />
       <workItem from="1765904138311" duration="25908000" />
+      <workItem from="1766761478091" duration="17255000" />
+      <workItem from="1768302177442" duration="1479000" />
+      <workItem from="1768548900099" duration="1638000" />
+      <workItem from="1768838521932" duration="2053000" />
+      <workItem from="1769269140212" duration="1957000" />
+      <workItem from="1770220526406" duration="4622000" />
     </task>
     <servers />
   </component>

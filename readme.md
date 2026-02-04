@@ -6,7 +6,7 @@ Your sub follows a wave pattern on their phone while wearing an RF shock collar.
 
 Everything runs on a single ESP32 - no cloud, no apps to install, completely self-contained.
 
-![LipSync Screenshot](screenshots/screenshot.png)
+![LipSync Screenshot](images/screenshot.png)
 
 ## Features
 
@@ -19,6 +19,7 @@ Everything runs on a single ESP32 - no cloud, no apps to install, completely sel
 - **Motion tracking** - Optional IMU shows their actual movement vs target
 - **No internet required** - Works completely offline
 - **Mobile-first UI** - Designed for phones and tablets
+- **Deep sleep** - Automatically sleeps after 1 minute of inactivity to save battery
 
 ## How It Works
 
@@ -37,42 +38,49 @@ The ESP32 creates its own WiFi network. Connect your phone, open the browser, an
 
 ## Bill of Materials
 
-| Component | Description | Qty | Approx. Price | Notes | Link |
-|-----------|-------------|-----|---------------|-------|------|
-| ESP32 Dev Board | ESP-WROOM-32 with CH340C USB | 1 | $6 | Any ESP32 devkit works | [aliexpress](https://www.aliexpress.com/item/1005005495948290.html?spm=a2g0o.order_list.order_list_main.15.35a9180218PAU0) |
-| 433MHz RF Transmitter | FS1000A or similar | 1 | $3 | For collar control | [aliexpress](https://www.aliexpress.com/item/32820610184.html?spm=a2g0o.order_list.order_list_main.68.3cf818022Tuhjv) |
-| RF Shock Collar | CaiXianlin protocol (common on Amazon/AliExpress) | 1 | $25 | The cheap ones with 3 channels | [aliexpress](https://www.aliexpress.com/item/1005005133046985.html?spm=a2g0o.order_list.order_list_main.73.7a7c1802LxhIXn) |
-| MPU6050 IMU | 6-axis accelerometer/gyro | 1 | $2 | Optional - for motion tracking | [aliexpress](https://www.aliexpress.com/item/1005009668682906.html?spm=a2g0o.order_list.order_list_main.5.31e21802mOT362) |
-| Jumper Wires | Female-to-female | ~10 | $2 | For connections |
-| USB Cable | Micro-USB or USB-C (depends on board) | 1 | - | Data cable, not charge-only |
-| Enclosure | 3D printed or project box | 1 | - | Optional - STL files included |
-| 18650 Enclosure | | 1 | $3 | Anything that will provide 5v via USB | [aliexpress](https://www.aliexpress.com/item/4000225705264.html?spm=a2g0o.productlist.main.3.6eb47cdcI3rKrQ&algo_pvid=3bceff15-865b-4fc9-a1e7-80fd209c7bd5&algo_exp_id=3bceff15-865b-4fc9-a1e7-80fd209c7bd5-2&pdp_ext_f=%7B%22order%22%3A%22557%22%2C%22spu_best_type%22%3A%22order%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21GBP%211.69%211.69%21%21%212.20%212.20%21%402103890117664361618361181edefc%2110000000887930324%21sea%21UK%21765854333%21X%211%210%21n_tag%3A-29919%3Bd%3Aa37805a3%3Bm03_new_user%3A-29895&curPageLogUid=bnPlmO818cNE&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A4000225705264%7C_p_origin_prod%3A) |
-| 18650 Battery | | 1 | $4 | | [aliexpress](https://www.aliexpress.com/item/1005010557364599.html?spm=a2g0o.productlist.main.3.57d1184fWd38nA&algo_pvid=5e19cdcd-bc21-48f4-8853-18cf01c0cc41&algo_exp_id=5e19cdcd-bc21-48f4-8853-18cf01c0cc41-2&pdp_ext_f=%7B%22order%22%3A%227%22%2C%22eval%22%3A%221%22%2C%22fromPage%22%3A%22search%22%7D&pdp_npi=6%40dis%21GBP%2122.02%213.17%21%21%21201.47%2129.04%21%402103919917664363228704335e4ed8%2112000052806891711%21sea%21UK%21765854333%21X%211%210%21n_tag%3A-29919%3Bd%3Aa37805a3%3Bm03_new_user%3A-29895%3BpisId%3A5000000197087145&curPageLogUid=75kd0oxtRwHv&utparam-url=scene%3Asearch%7Cquery_from%3A%7Cx_object_id%3A1005010557364599%7C_p_origin_prod%3A)
+| Component | Description | Qty | Approx. Price | Notes |
+|-----------|-------------|-----|---------------|-------|
+| Seeed XIAO ESP32C3 | Compact ESP32-C3 board | 1 | $5-10 | Built-in LiPo charging |
+| 3.7V LiPo Battery | 400-1000mAh | 1 | $5-10 | Connects to BAT+/BAT- pads |
+| 433MHz RF Transmitter | FS1000A or similar | 1 | $2-5 | For collar control |
+| RF Shock Collar | CaiXianlin protocol (common on Amazon/AliExpress) | 1 | $20-40 | The cheap ones with 3 channels |
+| MPU6050 IMU | GY-521 module | 1 | $2-5 | Optional - for motion tracking |
+| Tactile Button | 6x6mm momentary switch | 1 | $1 | Reset/wake button |
+| LEDs | 3mm or 5mm, any color | 2 | $1 | Status indicators |
+| Resistors | 220Ω (1/4W) | 2 | $1 | For LEDs |
+| Enclosure | 3D printed or project box | 1 | $5 | Optional - STL files included |
 
-**Total cost: ~$45** (depending on what you already have)
-
-If you don't want to use a 18650 battery, you could power the device from the mains, or a powerbank etc. 
+**Total cost: ~$40-80** (depending on what you already have)
 
 ### Where to Buy
 
-- **ESP32**: Amazon, AliExpress, or electronics suppliers like Adafruit/SparkFun
+- **XIAO ESP32C3**: [Seeed Studio](https://www.seeedstudio.com/Seeed-XIAO-ESP32C3-p-5431.html), Amazon, AliExpress
 - **RF Transmitter**: Search "433MHz transmitter module FS1000A"
 - **Shock Collar**: Search "dog training collar 433MHz" - look for ones with vibrate/beep/shock modes
 - **MPU6050**: Search "MPU6050 GY-521 module"
+- **LiPo Battery**: Any 3.7V LiPo with JST connector (400-1000mAh recommended)
 
 ## Wiring
 
 ```
-ESP32 Pin    Component
-─────────    ─────────
-GPIO 15  →   RF Transmitter DATA
-GPIO 21  →   MPU6050 SDA (optional)
-GPIO 22  →   MPU6050 SCL (optional)
-3.3V     →   RF Transmitter VCC, MPU6050 VCC
-GND      →   RF Transmitter GND, MPU6050 GND
+XIAO Pin      Component
+──────────    ─────────
+D10 (GPIO10)  RF Transmitter DATA
+D4 (GPIO6)    MPU6050 SDA (optional)
+D5 (GPIO7)    MPU6050 SCL (optional)
+D0 (GPIO2)    Green LED → 220Ω → GND (connection status)
+D3 (GPIO5)    Red LED → 220Ω → GND (session status)
+D1 (GPIO3)    Button → GND (reset/wake, hold 1s)
+3.3V          RF Transmitter VCC, MPU6050 VCC
+GND           RF Transmitter GND, MPU6050 GND
+BAT+/BAT-     3.7V LiPo battery
 ```
 
-**Note**: Some RF transmitters work better with 5V. If range is poor, try connecting VCC to the 5V pin instead.
+**Note**: RF range is reduced at 3.3V but sufficient for close range use. The XIAO charges the LiPo via USB-C.
+
+
+![LipSync PCB](images/PCB.png)
+![LipSync Enclosure](images/Enclosure.png)
 
 ## Quick Start
 
@@ -90,9 +98,11 @@ npm install
 npm run build
 cp -r dist/* ../firmware/data/
 
+# Upload to XIAO ESP32C3
 cd ../firmware
-pio run -t upload -e esp32dev      # Upload firmware (hold BOOT button)
-pio run -t uploadfs -e esp32dev    # Upload web files
+pio run -t upload -e seeed_xiao_esp32c3      # Upload firmware
+pio run -t uploadfs -e seeed_xiao_esp32c3    # Upload web files
+pio device monitor -b 115200                  # Monitor serial output
 ```
 
 ### 2. Connect and Play
@@ -142,9 +152,10 @@ npm run dev    # Starts at http://localhost:5173
 
 ```bash
 cd firmware
-pio run                           # Build
-pio run -t upload                 # Upload
-pio device monitor -b 115200      # Serial monitor
+pio run -e seeed_xiao_esp32c3                 # Build
+pio run -t upload -e seeed_xiao_esp32c3       # Upload firmware
+pio run -t uploadfs -e seeed_xiao_esp32c3     # Upload web files
+pio device monitor -b 115200                   # Serial monitor
 ```
 
 ### Serial Commands
@@ -175,6 +186,16 @@ lipsync/
 └── screenshots/
 ```
 
+## Power Management
+
+The device automatically enters deep sleep after 1 minute of inactivity (no connected client and no active session) to conserve battery. Press the button to wake it up - LEDs will blink 3 times on boot.
+
+Activity that resets the idle timer:
+- Button press
+- WebSocket client connecting
+- WebSocket messages received
+- Motion detected (cycles)
+
 ## Troubleshooting
 
 ### Can't connect to WiFi
@@ -183,17 +204,17 @@ lipsync/
 - Try `http://192.168.4.1` if `.local` doesn't work
 
 ### Collar not responding
-- Check RF transmitter wiring (DATA to GPIO 15)
-- Try 5V instead of 3.3V for the transmitter
+- Check RF transmitter wiring (DATA to D10/GPIO10)
 - Use serial monitor to confirm signals are being sent
+- Ensure collar is paired (see pairing instructions above)
 
 ### Upload fails
-- Hold the BOOT button when upload starts
 - Try a different USB cable (must be data, not charge-only)
 - Close any serial monitors first
+- Make sure you're using `-e seeed_xiao_esp32c3`
 
 ### Web app not loading
-- Make sure filesystem was uploaded: `pio run -t uploadfs`
+- Make sure filesystem was uploaded: `pio run -t uploadfs -e seeed_xiao_esp32c3`
 - Check serial output for errors
 
 ## Safety
