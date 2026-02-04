@@ -4,20 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="282d18eb-6bee-46c9-8ebc-0a144f29f96b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/enclosure/base.stl" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/enclosure/enclosure.scad" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/enclosure/enclosure2.scad" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/enclosure/headband_adapter.scad" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/include/config.h" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/include/config.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/platformio.ini" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/platformio.ini" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/src/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/src/main.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/firmware/src/motion_tracker.h" beforeDir="false" afterPath="$PROJECT_DIR$/firmware/src/motion_tracker.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshots/screenshot.png" beforeDir="false" />
-    </list>
+    <list default="true" id="282d18eb-6bee-46c9-8ebc-0a144f29f96b" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -84,7 +71,7 @@
       <workItem from="1768548900099" duration="1638000" />
       <workItem from="1768838521932" duration="2053000" />
       <workItem from="1769269140212" duration="1957000" />
-      <workItem from="1770220526406" duration="4622000" />
+      <workItem from="1770220526406" duration="4933000" />
     </task>
     <servers />
   </component>

@@ -6,7 +6,7 @@ Your sub follows a wave pattern on their phone while wearing an RF shock collar.
 
 Everything runs on a single ESP32 - no cloud, no apps to install, completely self-contained.
 
-![LipSync Screenshot](images/screenshot.png)
+![LipSync Screenshot](images/screenshot.jpg)
 
 ## Features
 
