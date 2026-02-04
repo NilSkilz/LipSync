@@ -79,8 +79,8 @@ BAT+/BAT-     3.7V LiPo battery
 **Note**: RF range is reduced at 3.3V but sufficient for close range use. The XIAO charges the LiPo via USB-C.
 
 
-![LipSync PCB](images/PCB.png)
-![LipSync Enclosure](images/Enclosure.png)
+![LipSync PCB](images/PCB.PNG)
+![LipSync Enclosure](images/Enclosure.PNG)
 
 ## Quick Start
 
